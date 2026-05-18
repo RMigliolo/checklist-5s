@@ -44,6 +44,8 @@ CRITERIO DE RANKING:
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
+const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
+const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -553,13 +555,17 @@ Después de guardar se bloqueará esta auditoría.`
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
             <div>
               <div className="flex items-center gap-4 mb-3">
-                <div className="bg-yellow-400/15 border border-yellow-300/30 rounded-3xl p-4">
-                  <Trophy className="w-12 h-12 text-yellow-300" />
+                <div className="bg-white/10 border border-white/20 rounded-3xl p-3 md:p-4 flex items-center justify-center">
+                  <img
+                    src={logoBlanco}
+                    alt="Logo PI"
+                    className="w-16 h-16 md:w-24 md:h-24 object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-4xl md:text-6xl font-black tracking-tight">Ranking 5S en Vivo</h1>
                   <p className="text-cyan-100 text-lg md:text-2xl font-medium">
-                    Dinámica 5S · Sistema de Gestión
+                    Mayor score primero · En empate gana menor tiempo
                   </p>
                 </div>
               </div>
@@ -680,8 +686,12 @@ Después de guardar se bloqueará esta auditoría.`
           className="bg-white rounded-[30px] shadow-2xl p-8 md:p-10 w-full max-w-md"
         >
           <div className="text-center mb-8">
-            <div className="inline-flex p-5 rounded-full bg-cyan-100 mb-5">
-              <LogIn className="w-10 h-10 text-cyan-700" />
+            <div className="flex justify-center mb-5">
+              <img
+                src={logoDorado}
+                alt="Logo PI"
+                className="w-24 h-24 md:w-28 md:h-28 object-contain drop-shadow-sm"
+              />
             </div>
 
             <h1 className="text-4xl font-black text-slate-800 mb-2">LOGIN 5S</h1>
