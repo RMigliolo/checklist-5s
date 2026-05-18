@@ -356,45 +356,167 @@ Después de guardar se bloqueará esta auditoría.`
     }
 
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
-    let y = 20;
+    const margin = 14;
+    const primary = [8, 117, 155];
+    const secondary = [37, 99, 235];
+    const dark = [15, 23, 42];
+    const light = [239, 246, 255];
+    const green = [22, 163, 74];
+    const red = [220, 38, 38];
+    let y = 16;
 
-    doc.setFontSize(20);
-    doc.text('CHECKLIST 5S - AUDITORÍA', 20, y);
+    const addHeader = () => {
+      doc.setFillColor(...primary);
+      doc.rect(0, 0, pageWidth, 30, 'F');
+      doc.setFillColor(...secondary);
+      doc.rect(pageWidth - 62, 0, 62, 30, 'F');
 
-    y += 18;
-    doc.setFontSize(12);
-    doc.text(`Nombre de Equipo: ${formData.equipo}`, 20, y);
-    y += 8;
-    doc.text(`Departamento: ${formData.departamento}`, 20, y);
-    y += 8;
-    doc.text(`Responsable: ${formData.responsable}`, 20, y);
-    y += 8;
-    doc.text(`Fecha: ${formData.fecha}`, 20, y);
-    y += 8;
-    doc.text(`Resultado: ${score}%`, 20, y);
-    y += 8;
-    doc.text(`Tiempo: ${formatDuration(elapsedSeconds)}`, 20, y);
-    y += 8;
-    doc.text(`Piezas OK: ${completedItems} / ${items.length}`, 20, y);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.text('CHECKLIST 5S - AUDITORÍA', margin, 13);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Clasificar · Ordenar · Limpiar · Estandarizar · Disciplina', margin, 22);
 
-    y += 15;
-    doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(`${score}%`, pageWidth - margin, 13, { align: 'right' });
+      doc.setFontSize(8);
+      doc.text('RESULTADO', pageWidth - margin, 22, { align: 'right' });
+    };
+
+    const addFooter = () => {
+      const pageNumber = doc.internal.getNumberOfPages();
+      doc.setDrawColor(203, 213, 225);
+      doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Auditoría 5S · Dinámica multiequipo', margin, pageHeight - 8);
+      doc.text(`Página ${pageNumber}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    };
+
+    const checkPage = (neededSpace = 12) => {
+      if (y + neededSpace > pageHeight - 20) {
+        addFooter();
+        doc.addPage();
+        addHeader();
+        y = 42;
+      }
+    };
+
+    addHeader();
+    y = 40;
+
+    doc.setFillColor(...light);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'F');
+    doc.setDrawColor(191, 219, 254);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'S');
+
+    doc.setTextColor(...dark);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Nombre de Equipo', margin + 6, y + 9);
+    doc.text('Departamento', margin + 72, y + 9);
+    doc.text('Responsable', margin + 130, y + 9);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(formData.equipo, margin + 6, y + 17);
+    doc.text(formData.departamento, margin + 72, y + 17);
+    doc.text(formData.responsable, margin + 130, y + 17);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fecha', margin + 6, y + 30);
+    doc.text('Tiempo', margin + 72, y + 30);
+    doc.text('Piezas OK', margin + 130, y + 30);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.fecha, margin + 6, y + 38);
+    doc.text(formatDuration(elapsedSeconds), margin + 72, y + 38);
+    doc.text(`${completedItems} / ${items.length}`, margin + 130, y + 38);
+
+    y += 58;
+
+    const tableX = margin;
+    const tableW = pageWidth - margin * 2;
+    const col = {
+      num: tableX,
+      item: tableX + 16,
+      qty: tableX + 93,
+      status: tableX + 116,
+      obs: tableX + 145,
+    };
+
+    const drawTableHeader = () => {
+      checkPage(14);
+      doc.setFillColor(...primary);
+      doc.roundedRect(tableX, y, tableW, 10, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('#', col.num + 4, y + 7);
+      doc.text('Herramienta / Componente', col.item, y + 7);
+      doc.text('Cant.', col.qty, y + 7);
+      doc.text('Estado', col.status, y + 7);
+      doc.text('Observaciones', col.obs, y + 7);
+      y += 12;
+    };
+
+    drawTableHeader();
 
     items.forEach((item, index) => {
-      if (y > pageHeight - 20) {
-        doc.addPage();
-        y = 20;
-      }
-
       const status = item.disponible ? 'OK' : 'FALTANTE';
-      const obs = item.observaciones ? ` | Obs: ${item.observaciones}` : '';
-      const line = `${index + 1}. ${item.cantidad} x ${item.objeto} - ${status}${obs}`;
-      const wrapped = doc.splitTextToSize(line, 170);
+      const obs = item.observaciones || '-';
+      const obsLines = doc.splitTextToSize(obs, 42);
+      const rowHeight = Math.max(10, obsLines.length * 5 + 4);
+      checkPage(rowHeight + 4);
 
-      doc.text(wrapped, 20, y);
-      y += wrapped.length * 7;
+      if (y < 44) drawTableHeader();
+
+      doc.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 250, index % 2 === 0 ? 255 : 252);
+      doc.rect(tableX, y - 2, tableW, rowHeight, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.line(tableX, y + rowHeight - 2, tableX + tableW, y + rowHeight - 2);
+
+      doc.setTextColor(...dark);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.text(String(index + 1), col.num + 4, y + 5);
+      doc.text(item.objeto, col.item, y + 5);
+      doc.text(String(item.cantidad), col.qty + 3, y + 5);
+
+      if (item.disponible) {
+        doc.setTextColor(...green);
+      } else {
+        doc.setTextColor(...red);
+      }
+      doc.setFont('helvetica', 'bold');
+      doc.text(status, col.status, y + 5);
+
+      doc.setTextColor(71, 85, 105);
+      doc.setFont('helvetica', 'normal');
+      doc.text(obsLines, col.obs, y + 5);
+
+      y += rowHeight;
     });
+
+    checkPage(26);
+    y += 8;
+    doc.setFillColor(255, 251, 235);
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 18, 3, 3, 'F');
+    doc.setTextColor(146, 64, 14);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('Compromiso 5S:', margin + 5, y + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('mantener el área clasificada, ordenada, limpia, estandarizada y con disciplina.', margin + 38, y + 7);
+    doc.text('Este reporte forma parte de una dinámica de aprendizaje operativo.', margin + 5, y + 14);
+
+    addFooter();
 
     const safeTeam = formData.equipo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     doc.save(`auditoria_5s_${safeTeam || 'equipo'}.pdf`);
@@ -421,6 +543,133 @@ Después de guardar se bloqueará esta auditoría.`
   };
 
   const isConnected = connectionStatus === 'Conectado';
+  const viewMode = new URLSearchParams(window.location.search).get('modo');
+  const isRankingOnlyMode = viewMode === 'ranking';
+
+  if (isRankingOnlyMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+            <div>
+              <div className="flex items-center gap-4 mb-3">
+                <div className="bg-yellow-400/15 border border-yellow-300/30 rounded-3xl p-4">
+                  <Trophy className="w-12 h-12 text-yellow-300" />
+                </div>
+                <div>
+                  <h1 className="text-4xl md:text-6xl font-black tracking-tight">Ranking 5S en Vivo</h1>
+                  <p className="text-cyan-100 text-lg md:text-2xl font-medium">
+                    Mayor score primero · En empate gana menor tiempo
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 mt-4">
+                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-sm font-bold">
+                  {isConnected ? <Wifi className="w-4 h-4 text-green-300" /> : <WifiOff className="w-4 h-4 text-red-300" />}
+                  <span>Supabase: {connectionStatus}</span>
+                </div>
+                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-sm font-bold">
+                  <Clock className="w-4 h-4 text-yellow-200" />
+                  <span>Vista para pantalla / administrador</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={loadRanking}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-2xl px-6 py-4 font-black text-lg shadow-xl transition-all"
+            >
+              Actualizar ranking
+            </button>
+          </div>
+
+          {loadingRanking ? (
+            <div className="bg-white/10 border border-white/15 rounded-[32px] p-10 text-center text-2xl font-bold">
+              Cargando ranking...
+            </div>
+          ) : ranking.length === 0 ? (
+            <div className="bg-white/10 border border-white/15 rounded-[32px] p-10 text-center">
+              <div className="text-3xl font-black mb-2">Aún no existen auditorías guardadas.</div>
+              <p className="text-cyan-100 text-lg">Cuando los equipos guarden sus evaluaciones aparecerán aquí en tiempo real.</p>
+            </div>
+          ) : (
+            <div className="grid gap-5">
+              {ranking.slice(0, 12).map((item, index) => (
+                <motion.div
+                  key={item.id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`rounded-[30px] border p-5 md:p-6 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-4 items-center ${
+                    index === 0
+                      ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
+                      : index === 1
+                      ? 'bg-white/90 text-slate-900 border-slate-200'
+                      : index === 2
+                      ? 'bg-orange-200 text-slate-900 border-orange-100'
+                      : 'bg-white/10 border-white/15 text-white'
+                  }`}
+                >
+                  <div className="md:col-span-1 text-5xl md:text-6xl font-black text-center md:text-left">
+                    {getRankingBadge(index)}
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                      Equipo
+                    </div>
+                    <div className="text-3xl md:text-4xl font-black leading-tight">
+                      {item.area || 'Sin equipo'}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                      Departamento
+                    </div>
+                    <div className="text-xl md:text-2xl font-bold">
+                      {item.departamento || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                      Responsable
+                    </div>
+                    <div className="text-xl md:text-2xl font-bold">
+                      {item.responsable || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 text-left md:text-center">
+                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                      Score
+                    </div>
+                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-cyan-200'}`}>
+                      {item.score}%
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 text-left md:text-center">
+                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                      Tiempo
+                    </div>
+                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-yellow-200'}`}>
+                      {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-8 bg-white/10 border border-white/15 rounded-3xl p-5 text-center text-cyan-100 font-bold">
+            Link de equipos: página normal · Link de pantalla: agrega <span className="text-white">?modo=ranking</span> al final de la URL
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!logged) {
     return (
@@ -440,37 +689,57 @@ Después de guardar se bloqueará esta auditoría.`
           </div>
 
           <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Nombre de Equipo. Ej. Equipo 1"
-              value={loginData.equipo}
-              onChange={(e) => setLoginData({ ...loginData, equipo: e.target.value })}
-              className="w-full rounded-2xl border border-slate-300 px-5 py-4 focus:outline-none focus:ring-4 focus:ring-cyan-300"
-            />
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+                Nombre de Equipo
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. Equipo 1"
+                value={loginData.equipo}
+                onChange={(e) => setLoginData({ ...loginData, equipo: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+              />
+            </div>
 
-            <input
-              type="text"
-              placeholder="Departamento. Ej. Producción"
-              value={loginData.departamento}
-              onChange={(e) => setLoginData({ ...loginData, departamento: e.target.value })}
-              className="w-full rounded-2xl border border-slate-300 px-5 py-4 focus:outline-none focus:ring-4 focus:ring-cyan-300"
-            />
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+                Departamento
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. Producción"
+                value={loginData.departamento}
+                onChange={(e) => setLoginData({ ...loginData, departamento: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+              />
+            </div>
 
-            <input
-              type="text"
-              placeholder="Responsable. Ej. Juan Pérez"
-              value={loginData.responsable}
-              onChange={(e) => setLoginData({ ...loginData, responsable: e.target.value })}
-              className="w-full rounded-2xl border border-slate-300 px-5 py-4 focus:outline-none focus:ring-4 focus:ring-cyan-300"
-            />
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+                Responsable
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. Juan Pérez"
+                value={loginData.responsable}
+                onChange={(e) => setLoginData({ ...loginData, responsable: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+              />
+            </div>
 
-            <input
-              type="password"
-              placeholder="Contraseña rápida"
-              value={loginData.password}
-              onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-              className="w-full rounded-2xl border border-slate-300 px-5 py-4 focus:outline-none focus:ring-4 focus:ring-cyan-300"
-            />
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+                Contraseña rápida
+              </label>
+              <input
+                type="password"
+                placeholder="Ingresa cualquier clave rápida"
+                value={loginData.password}
+                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+              />
+            </div>
 
             <button
               onClick={login}
@@ -633,15 +902,80 @@ Después de guardar se bloqueará esta auditoría.`
         </div>
 
         <div className="p-3 md:p-6 lg:p-8">
-          <div className="overflow-x-auto rounded-[28px] border border-slate-200 shadow-xl">
-            <table className="w-full min-w-[900px] border-collapse">
+          <div className="md:hidden grid gap-4">
+            {items.map((item, index) => (
+              <div
+                key={item.objeto}
+                className={`rounded-3xl border shadow-md p-4 ${
+                  item.disponible ? 'bg-green-50 border-green-100' : 'bg-white border-slate-200'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="shrink-0 w-14 h-14 rounded-2xl bg-cyan-100 text-cyan-700 font-black text-2xl flex items-center justify-center">
+                      {item.cantidad}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs uppercase tracking-widest text-slate-500 font-bold">Herramienta / Componente</div>
+                      <div className="text-xl font-black text-slate-800 break-words">{item.objeto}</div>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`shrink-0 px-3 py-2 rounded-full text-xs font-black ${
+                      item.disponible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                    }`}
+                  >
+                    {item.disponible ? 'OK' : 'FALTANTE'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 items-center mb-3">
+                  <label className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-200 flex items-center justify-between gap-3">
+                    <span className="text-sm font-black text-slate-700">Disponible</span>
+                    <input
+                      type="checkbox"
+                      checked={item.disponible}
+                      disabled={auditClosed}
+                      onChange={(e) => updateItem(index, 'disponible', e.target.checked)}
+                      className="w-7 h-7 accent-cyan-600 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                  </label>
+
+                  <div className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-200">
+                    <div className="text-xs uppercase tracking-widest text-slate-500 font-bold">Cantidad</div>
+                    <div className="text-2xl font-black text-cyan-700">{item.cantidad}</div>
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  value={item.observaciones}
+                  disabled={auditClosed}
+                  onChange={(e) => updateItem(index, 'observaciones', e.target.value)}
+                  placeholder="Observaciones opcionales"
+                  className="w-full rounded-2xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-300 text-sm disabled:bg-slate-100"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto rounded-[28px] border border-slate-200 shadow-xl">
+            <table className="w-full min-w-[760px] border-collapse table-fixed">
+              <colgroup>
+                <col className="w-[90px]" />
+                <col className="w-[260px]" />
+                <col className="w-[120px]" />
+                <col className="w-[120px]" />
+                <col className="w-[250px]" />
+              </colgroup>
               <thead>
                 <tr className="bg-gradient-to-r from-cyan-700 to-blue-700 text-white">
-                  <th className="px-4 py-5 text-left text-sm md:text-base uppercase tracking-wide">Cantidad</th>
-                  <th className="px-4 py-5 text-left text-sm md:text-base uppercase tracking-wide">Herramienta / Componente</th>
-                  <th className="px-4 py-5 text-center text-sm md:text-base uppercase tracking-wide">Disponible</th>
-                  <th className="px-4 py-5 text-center text-sm md:text-base uppercase tracking-wide">Estado</th>
-                  <th className="px-4 py-5 text-left text-sm md:text-base uppercase tracking-wide">Observaciones</th>
+                  <th className="px-3 py-4 text-center text-xs lg:text-sm uppercase tracking-wide">Cantidad</th>
+                  <th className="px-3 py-4 text-left text-xs lg:text-sm uppercase tracking-wide">Herramienta / Componente</th>
+                  <th className="px-3 py-4 text-center text-xs lg:text-sm uppercase tracking-wide">Disponible</th>
+                  <th className="px-3 py-4 text-center text-xs lg:text-sm uppercase tracking-wide">Estado</th>
+                  <th className="px-3 py-4 text-left text-xs lg:text-sm uppercase tracking-wide">Observaciones</th>
                 </tr>
               </thead>
 
@@ -653,22 +987,22 @@ Después de guardar se bloqueará esta auditoría.`
                       item.disponible ? 'bg-green-50/60' : index % 2 === 0 ? 'bg-white' : 'bg-cyan-50/40'
                     } hover:bg-cyan-100/50`}
                   >
-                    <td className="px-4 py-5 text-center">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-700 font-black text-xl shadow-sm">
+                    <td className="px-3 py-4 text-center">
+                      <div className="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-cyan-100 text-cyan-700 font-black text-xl shadow-sm">
                         {item.cantidad}
                       </div>
                     </td>
 
-                    <td className="px-4 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-slate-100 rounded-xl p-2">
+                    <td className="px-3 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="bg-slate-100 rounded-xl p-2 shrink-0">
                           <Wrench className="w-5 h-5 text-cyan-700" />
                         </div>
-                        <span className="font-bold text-slate-700 text-sm md:text-lg">{item.objeto}</span>
+                        <span className="font-bold text-slate-700 text-sm lg:text-base break-words">{item.objeto}</span>
                       </div>
                     </td>
 
-                    <td className="px-4 py-5 text-center">
+                    <td className="px-3 py-4 text-center">
                       <input
                         type="checkbox"
                         checked={item.disponible}
@@ -678,22 +1012,22 @@ Después de guardar se bloqueará esta auditoría.`
                       />
                     </td>
 
-                    <td className="px-4 py-5 text-center">
+                    <td className="px-3 py-4 text-center">
                       {item.disponible ? (
-                        <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-xs md:text-sm font-bold">OK</span>
+                        <span className="bg-green-100 text-green-700 px-3 py-2 rounded-full text-xs font-bold">OK</span>
                       ) : (
-                        <span className="bg-red-100 text-red-600 px-4 py-2 rounded-full text-xs md:text-sm font-bold">FALTANTE</span>
+                        <span className="bg-red-100 text-red-600 px-3 py-2 rounded-full text-xs font-bold">FALTANTE</span>
                       )}
                     </td>
 
-                    <td className="px-4 py-5">
+                    <td className="px-3 py-4">
                       <input
                         type="text"
                         value={item.observaciones}
                         disabled={auditClosed}
                         onChange={(e) => updateItem(index, 'observaciones', e.target.value)}
                         placeholder="Agregar comentario"
-                        className="w-full rounded-xl border border-slate-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-300 text-sm disabled:bg-slate-100"
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-300 text-sm disabled:bg-slate-100"
                       />
                     </td>
                   </tr>
