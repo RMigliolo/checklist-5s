@@ -565,7 +565,7 @@ Después de guardar se bloqueará esta auditoría.`
                 <div>
                   <h1 className="text-4xl md:text-6xl font-black tracking-tight">Ranking 5S en Vivo</h1>
                   <p className="text-cyan-100 text-lg md:text-2xl font-medium">
-                    Mayor score primero · En empate gana menor tiempo
+                    Dinámica 5S · Sistema de Gestión Integral
                   </p>
                 </div>
               </div>
