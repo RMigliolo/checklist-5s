@@ -663,8 +663,8 @@ Después de guardar se bloqueará esta auditoría.`
             </div>
           )}
 
-          <div className="mt-8 bg-white/10 border border-white/15 rounded-3xl p-5 text-center text-cyan-100 font-bold">
-            Link de equipos: página normal · Link de pantalla: agrega <span className="text-white">?modo=ranking</span> al final de la URL
+          <div className="mt-8 bg-white/10 border border-white/15 rounded-3xl p-5 text-center font-black text-2xl md:text-3xl text-white tracking-wide">
+            5S · Cultura de Excelencia
           </div>
         </div>
       </div>
