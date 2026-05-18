@@ -695,7 +695,7 @@ Después de guardar se bloqueará esta auditoría.`
             </div>
 
             <h1 className="text-4xl font-black text-slate-800 mb-2">LOGIN 5S</h1>
-            <p className="text-slate-500">Registro rápido antes de iniciar cronómetro</p>
+            <p className="text-slate-500">Registro rápido antes de iniciar </p>
           </div>
 
           <div className="space-y-4">
@@ -755,7 +755,7 @@ Después de guardar se bloqueará esta auditoría.`
               onClick={login}
               className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 text-white rounded-2xl py-4 font-bold text-lg hover:scale-[1.02] transition-all"
             >
-              Ingresar e iniciar cronómetro
+              Ingresar e iniciar
             </button>
 
             <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
