@@ -98,6 +98,16 @@ const formatIntegrantes = (integrantes = []) => {
   if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
   return integrantes.join(', ');
 };
+const formatIntegrantesRanking = (integrantes = [], maxVisible = 6) => {
+  if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
+
+  const visible = integrantes.slice(0, maxVisible);
+  const extra = integrantes.length - visible.length;
+
+  return extra > 0
+    ? `${visible.join(', ')} +${extra} más`
+    : visible.join(', ');
+};
 
 export default function Checklist5S() {
   const [logged, setLogged] = useState(false);
@@ -634,7 +644,7 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`rounded-[30px] border p-5 md:p-6 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-4 items-center ${
+                  className={`min-h-[112px] rounded-[30px] border p-4 md:p-5 shadow-2xl grid grid-cols-1 xl:grid-cols-[72px_minmax(190px,1.5fr)_minmax(160px,1.1fr)_minmax(260px,1.7fr)_150px_150px] gap-4 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -644,56 +654,84 @@ Después de guardar se bloqueará esta auditoría.`
                       : 'bg-white/10 border-white/15 text-white'
                   }`}
                 >
-                  <div className="md:col-span-1 text-5xl md:text-6xl font-black text-center md:text-left">
+                  <div className="text-4xl md:text-5xl font-black text-center xl:text-left shrink-0">
                     {getRankingBadge(index)}
                   </div>
 
-                  <div className="md:col-span-3">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
                       Equipo
                     </div>
-                    <div className="text-3xl md:text-4xl font-black leading-tight">
+                    <div className="text-2xl md:text-3xl font-black leading-tight truncate">
                       {item.area || 'Sin equipo'}
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Departamento
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                     }`}
+                    >
+                     Departamento
                     </div>
-                    <div className="text-xl md:text-2xl font-bold">
+                    <div className="text-lg md:text-xl font-bold leading-tight truncate">
                       {item.departamento || 'N/A'}
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Integrantes
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                     }`}
+                    >
+                     Integrantes
                     </div>
-                    <div className="text-lg md:text-xl font-bold leading-tight">
-                      {formatIntegrantes(item.integrantes)}
+                    <div className="text-sm md:text-base font-black leading-snug max-h-[44px] overflow-hidden">
+                      {formatIntegrantesRanking(item.integrantes)}
                     </div>
-                  </div>
+                 </div>
 
-                  <div className="md:col-span-2 text-left md:text-center">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Score
+                 <div className="text-left xl:text-center">
+                   <div
+                     className={`text-[10px] uppercase tracking-widest font-black ${
+                       index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                     }`}
+                    >
+                     Score
                     </div>
-                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-cyan-200'}`}>
+                    <div
+                      className={`text-4xl md:text-5xl font-black ${
+                        index <= 2 ? 'text-slate-950' : 'text-cyan-200'
+                      }`}
+                     >
                       {item.score}%
+                     </div>
                     </div>
-                  </div>
 
-                  <div className="md:col-span-2 text-left md:text-center">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Tiempo
-                    </div>
-                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-yellow-200'}`}>
-                      {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                    <div className="text-left xl:text-center">
+                     <div
+                       className={`text-[10px] uppercase tracking-widest font-black ${
+                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                       }`}
+                      >
+                       Tiempo
+                      </div>
+                      <div
+                        className={`text-4xl md:text-5xl font-black ${
+                          index <= 2 ? 'text-slate-950' : 'text-yellow-200'
+                        }`}
+                       >
+                        {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                       </div>
+                      </div>
+                    </motion.div>
+                  ))}
             </div>
           )}
 
@@ -1153,26 +1191,33 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="bg-white rounded-2xl p-5 shadow-md border border-slate-200 grid grid-cols-1 md:grid-cols-7 gap-4 items-center"
+                  className="bg-white rounded-2xl p-5 shadow-md border border-slate-200 grid grid-cols-1 lg:grid-cols-[80px_minmax(180px,1.6fr)_minmax(170px,1.3fr)_minmax(150px,1.2fr)_120px_120px_120px] gap-4 items-center"
                 >
                   <div>
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Lugar</div>
                     <div className="text-3xl font-black text-slate-800">{getRankingBadge(index)}</div>
                   </div>
 
-                  <div>
-                    <div className="text-sm text-slate-500 uppercase tracking-widest">Equipo</div>
-                    <div className="text-2xl font-black text-slate-800">{item.area || 'Sin equipo'}</div>
-                  </div>
+                  
+                    <div className="min-w-0">
+                      <div className="text-sm text-slate-500 uppercase tracking-widest">Equipo</div>
+                      <div className="text-2xl font-black text-slate-800 truncate">
+                        {item.area || 'Sin equipo'}
+                      </div>
+                    </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Departamento</div>
-                    <div className="text-lg font-bold text-slate-700">{item.departamento || 'N/A'}</div>
+                    <div className="text-lg font-bold text-slate-700 truncate">
+                      {item.departamento || 'N/A'}
+                    </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Responsable</div>
-                    <div className="text-lg font-bold text-slate-700">{item.responsable || 'N/A'}</div>
+                    <div className="text-lg font-bold text-slate-700 truncate">
+                      {item.responsable || 'N/A'}
+                    </div>
                   </div>
 
                   <div>
