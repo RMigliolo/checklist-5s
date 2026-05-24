@@ -46,6 +46,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
 const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
+const RANKING_AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 minutos
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -612,7 +613,17 @@ Después de guardar se bloqueará esta auditoría.`
   const isConnected = connectionStatus === 'Conectado';
   const viewMode = new URLSearchParams(window.location.search).get('modo');
   const isRankingOnlyMode = viewMode === 'ranking';
+    useEffect(() => {
+    if (!isRankingOnlyMode) return;
 
+    const interval = window.setInterval(() => {
+      loadRanking();
+    }, RANKING_AUTO_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+    }, [isRankingOnlyMode]);
   if (isRankingOnlyMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
