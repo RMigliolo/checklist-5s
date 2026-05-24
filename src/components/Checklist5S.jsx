@@ -320,16 +320,21 @@ if (
     }
 
     const confirmed = window.confirm(
-      `¿Guardar evaluación final?
+  `¿Guardar evaluación final?
 
-Equipo: ${formData.equipo}
-Departamento: ${formData.departamento}
-Responsable: ${formData.responsable}
-Score: ${score}%
-Tiempo: ${formatDuration(elapsedSeconds)}
+    Equipo: ${formData.equipo}
+    Departamento: ${formData.departamento}
+    Responsable: ${formData.responsable}
+    Integrantes: ${
+        Array.isArray(formData.integrantes) && formData.integrantes.length > 0
+          ? formData.integrantes.join(', ')
+          : 'N/A'
+      }
+    Score: ${score}%
+    Tiempo: ${formatDuration(elapsedSeconds)}
 
-Después de guardar se bloqueará esta auditoría.`
-    );
+    Después de guardar se bloqueará esta auditoría.`
+   );
 
     if (!confirmed) return;
 
@@ -426,6 +431,11 @@ Después de guardar se bloqueará esta auditoría.`
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
+
+    const integrantesPdf =
+      Array.isArray(formData.integrantes) && formData.integrantes.length > 0
+        ? formData.integrantes.join(', ')
+        : 'N/A';
     const margin = 14;
     const primary = [8, 117, 155];
     const secondary = [37, 99, 235];
@@ -480,9 +490,9 @@ Después de guardar se bloqueará esta auditoría.`
     y = 40;
 
     doc.setFillColor(...light);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'F');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'F');
     doc.setDrawColor(191, 219, 254);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'S');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'S');
 
     doc.setTextColor(...dark);
     doc.setFont('helvetica', 'bold');
@@ -507,7 +517,14 @@ Después de guardar se bloqueará esta auditoría.`
     doc.text(formatDuration(elapsedSeconds), margin + 72, y + 38);
     doc.text(`${completedItems} / ${items.length}`, margin + 130, y + 38);
 
-    y += 58;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Integrantes', margin + 6, y + 50);
+
+    doc.setFont('helvetica', 'normal');
+    const integrantesLines = doc.splitTextToSize(integrantesPdf, pageWidth - margin * 2 - 12);
+    doc.text(integrantesLines.slice(0, 2), margin + 6, y + 58);
+
+    y += 76;
 
     const tableX = margin;
     const tableW = pageWidth - margin * 2;
