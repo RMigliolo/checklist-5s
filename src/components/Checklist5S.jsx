@@ -48,10 +48,10 @@ const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
 
 const RANKING_AUTO_REFRESH_MS = 15 * 60 * 1000; // 15 minutos
-const RANKING_AUTO_SCROLL_MS = 15 * 60 * 1000; // 15 minutos
-const RANKING_SCROLL_DOWN_DURATION_MS = 45000; // 45 segundos bajando suave
-const RANKING_SCROLL_UP_DURATION_MS = 45000; // 45 segundos subiendo suave
-const RANKING_SCROLL_BOTTOM_PAUSE_MS = 12000; // 12 segundos abajo
+const RANKING_AUTO_SCROLL_MS = 15 * 60 * 1000; // espera 15 minutos antes de iniciar cada recorrido
+const RANKING_SCROLL_DOWN_DURATION_MS = 60000; // 60 segundos bajando suave
+const RANKING_SCROLL_UP_DURATION_MS = 60000; // 60 segundos subiendo suave
+const RANKING_SCROLL_BOTTOM_PAUSE_MS = 15000; // 15 segundos abajo
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -89,7 +89,7 @@ const formatDuration = (totalSeconds = 0) => {
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
-const smoothScrollToPosition = (targetY, duration = 45000) => {
+const smoothScrollToPosition = (targetY, duration = 60000) => {
   const startY = window.scrollY;
   const distance = targetY - startY;
   const startTime = performance.now();
@@ -865,31 +865,104 @@ const isAdminMode = viewMode === 'admin';
 useEffect(() => {
   if (!isRankingOnlyMode) return;
 
+  let cancelled = false;
+  let isScrolling = false;
+  let nextCycleTimeout = null;
   let bottomPauseTimeout = null;
-  let cycleInterval = null;
+  let animationFrameId = null;
 
-  const runScrollCycle = () => {
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
-
-    if (maxScroll <= 0) return;
-
-    smoothScrollToPosition(maxScroll, RANKING_SCROLL_DOWN_DURATION_MS);
-
-    bottomPauseTimeout = window.setTimeout(() => {
-      smoothScrollToPosition(0, RANKING_SCROLL_UP_DURATION_MS);
-    }, RANKING_SCROLL_DOWN_DURATION_MS + RANKING_SCROLL_BOTTOM_PAUSE_MS);
+  const easeInOutCubic = (progress) => {
+    return progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
   };
 
-  cycleInterval = window.setInterval(runScrollCycle, RANKING_AUTO_SCROLL_MS);
+  const animateScrollTo = (targetY, duration) => {
+    return new Promise((resolve) => {
+      const startY = window.scrollY;
+      const distance = targetY - startY;
+      const startTime = performance.now();
+
+      const step = (currentTime) => {
+        if (cancelled) {
+          resolve();
+          return;
+        }
+
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        window.scrollTo(0, startY + distance * easedProgress);
+
+        if (progress < 1) {
+          animationFrameId = window.requestAnimationFrame(step);
+        } else {
+          resolve();
+        }
+      };
+
+      animationFrameId = window.requestAnimationFrame(step);
+    });
+  };
+
+  const wait = (ms) => {
+    return new Promise((resolve) => {
+      bottomPauseTimeout = window.setTimeout(resolve, ms);
+    });
+  };
+
+  const runScrollCycle = async () => {
+    if (cancelled || isScrolling) return;
+
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+    if (maxScroll <= 0) {
+      scheduleNextCycle();
+      return;
+    }
+
+    isScrolling = true;
+
+    await animateScrollTo(maxScroll, RANKING_SCROLL_DOWN_DURATION_MS);
+
+    if (cancelled) return;
+
+    await wait(RANKING_SCROLL_BOTTOM_PAUSE_MS);
+
+    if (cancelled) return;
+
+    await animateScrollTo(0, RANKING_SCROLL_UP_DURATION_MS);
+
+    isScrolling = false;
+
+    if (!cancelled) {
+      scheduleNextCycle();
+    }
+  };
+
+  const scheduleNextCycle = () => {
+    nextCycleTimeout = window.setTimeout(() => {
+      runScrollCycle();
+    }, RANKING_AUTO_SCROLL_MS);
+  };
+
+  window.scrollTo(0, 0);
+  scheduleNextCycle();
 
   return () => {
-    if (cycleInterval) {
-      window.clearInterval(cycleInterval);
+    cancelled = true;
+
+    if (nextCycleTimeout) {
+      window.clearTimeout(nextCycleTimeout);
     }
 
     if (bottomPauseTimeout) {
       window.clearTimeout(bottomPauseTimeout);
+    }
+
+    if (animationFrameId) {
+      window.cancelAnimationFrame(animationFrameId);
     }
   };
 }, [isRankingOnlyMode]);
