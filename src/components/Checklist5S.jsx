@@ -67,6 +67,7 @@ const baseItems = [
   { cantidad: 1, objeto: 'Pinza Tenaza' },
   { cantidad: 1, objeto: 'Llave Doble Punta' },
   { cantidad: 6, objeto: 'Tornillos' },
+  { cantidad: 6, objeto: 'Tuercas' },
   { cantidad: 6, objeto: 'Taquetes' },
   { cantidad: 1, objeto: 'Placa 3 Figuras' },
   { cantidad: 1, objeto: 'Placa 3 Orificios' },
