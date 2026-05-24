@@ -83,15 +83,31 @@ const formatDuration = (totalSeconds = 0) => {
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
+const parseIntegrantes = (value = '') => {
+  return value
+    .split(/[,\n]/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => name.split(/\s+/)[0])
+    .map((name) => name.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]/g, ''))
+    .filter(Boolean)
+    .slice(0, 10);
+};
+
+const formatIntegrantes = (integrantes = []) => {
+  if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
+  return integrantes.join(', ');
+};
 
 export default function Checklist5S() {
   const [logged, setLogged] = useState(false);
   const [loginData, setLoginData] = useState({
-    equipo: '',
-    departamento: '',
-    responsable: '',
-    password: '',
-  });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantesText: '',
+  password: '',
+});
   const [ranking, setRanking] = useState([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -104,11 +120,12 @@ export default function Checklist5S() {
   const [auditClosed, setAuditClosed] = useState(false);
 
   const [formData, setFormData] = useState({
-    equipo: '',
-    departamento: '',
-    responsable: '',
-    fecha: new Date().toISOString().split('T')[0],
-  });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantes: [],
+  fecha: new Date().toISOString().split('T')[0],
+});
 
   const [items, setItems] = useState(createInitialItems);
 
@@ -200,26 +217,30 @@ export default function Checklist5S() {
   }, [logged, timerStartedAt, auditClosed]);
 
   const login = () => {
-    if (
-      !loginData.equipo.trim() ||
-      !loginData.departamento.trim() ||
-      !loginData.responsable.trim() ||
-      !loginData.password.trim()
-    ) {
-      alert('Ingresa nombre de equipo, departamento, responsable y contraseña rápida.');
-      return;
-    }
+    const integrantes = parseIntegrantes(loginData.integrantesText);
+
+if (
+  !loginData.equipo.trim() ||
+  !loginData.departamento.trim() ||
+  !loginData.responsable.trim() ||
+  integrantes.length === 0 ||
+  !loginData.password.trim()
+) {
+  alert('Ingresa nombre de equipo, departamento, responsable, integrantes y contraseña rápida.');
+  return;
+}
 
     setLogged(true);
     setAuditClosed(false);
     setElapsedSeconds(0);
     setTimerStartedAt(Date.now());
     setFormData({
-      equipo: loginData.equipo.trim(),
-      departamento: loginData.departamento.trim(),
-      responsable: loginData.responsable.trim(),
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: loginData.equipo.trim(),
+  departamento: loginData.departamento.trim(),
+  responsable: loginData.responsable.trim(),
+  integrantes,
+  fecha: new Date().toISOString().split('T')[0],
+});
     playSound('success');
   };
 
@@ -245,6 +266,9 @@ export default function Checklist5S() {
     if (!formData.equipo.trim()) return 'Ingresa el nombre de equipo.';
     if (!formData.departamento.trim()) return 'Ingresa el departamento.';
     if (!formData.responsable.trim()) return 'Ingresa el responsable.';
+    if (!Array.isArray(formData.integrantes) || formData.integrantes.length === 0) {
+  return 'Ingresa al menos un integrante del equipo.';
+}
     if (!formData.fecha) return 'Selecciona la fecha.';
     if (elapsedSeconds <= 0) return 'El cronómetro aún no registra tiempo. Espera al menos 1 segundo antes de guardar.';
     return null;
@@ -281,6 +305,7 @@ Después de guardar se bloqueará esta auditoría.`
       area: formData.equipo.trim(),
       departamento: formData.departamento.trim(),
       responsable: formData.responsable.trim(),
+      integrantes: formData.integrantes,
       fecha: formData.fecha,
       score,
       completados: completedItems,
@@ -313,11 +338,12 @@ Después de guardar se bloqueará esta auditoría.`
 
     setItems(createInitialItems());
     setFormData({
-      equipo: loginData.equipo || '',
-      departamento: loginData.departamento || '',
-      responsable: loginData.responsable || '',
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: loginData.equipo || '',
+  departamento: loginData.departamento || '',
+  responsable: loginData.responsable || '',
+  integrantes: parseIntegrantes(loginData.integrantesText),
+  fecha: new Date().toISOString().split('T')[0],
+});
     setAuditClosed(false);
     setElapsedSeconds(0);
     setTimerStartedAt(Date.now());
@@ -333,17 +359,19 @@ Después de guardar se bloqueará esta auditoría.`
 
     setLogged(false);
     setLoginData({
-      equipo: '',
-      departamento: '',
-      responsable: '',
-      password: '',
-    });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantesText: '',
+  password: '',
+});
     setFormData({
-      equipo: '',
-      departamento: '',
-      responsable: '',
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantes: [],
+  fecha: new Date().toISOString().split('T')[0],
+});
     setItems(createInitialItems());
     setAuditClosed(false);
     setElapsedSeconds(0);
@@ -640,10 +668,10 @@ Después de guardar se bloqueará esta auditoría.`
 
                   <div className="md:col-span-2">
                     <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Responsable
+                      Integrantes
                     </div>
-                    <div className="text-xl md:text-2xl font-bold">
-                      {item.responsable || 'N/A'}
+                    <div className="text-lg md:text-xl font-bold leading-tight">
+                      {formatIntegrantes(item.integrantes)}
                     </div>
                   </div>
 
@@ -736,6 +764,22 @@ Después de guardar se bloqueará esta auditoría.`
                 onChange={(e) => setLoginData({ ...loginData, responsable: e.target.value })}
                 className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+               Integrantes del equipo
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Ej. Ana, Luis, Pedro, Carlos"
+                value={loginData.integrantesText}
+                onChange={(e) => setLoginData({ ...loginData, integrantesText: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300 resize-none"
+              />
+              <p className="text-xs text-slate-400 mt-2">
+                 Máximo 10 integrantes. Escribe solo el primer nombre, separado por coma.
+              </p>
             </div>
 
             <div>
@@ -857,7 +901,7 @@ Después de guardar se bloqueará esta auditoría.`
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 p-5 md:p-8 bg-slate-50 border-b border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-5 p-5 md:p-8 bg-slate-50 border-b border-slate-200">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de Equipo</label>
             <input
@@ -887,6 +931,16 @@ Después de guardar se bloqueará esta auditoría.`
               className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
             />
           </div>
+
+          <div>
+           <label className="block text-sm font-bold text-slate-700 mb-2">Integrantes</label>
+           <input
+             type="text"
+             value={formatIntegrantes(formData.integrantes)}
+            disabled
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
+          />
+        </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Fecha</label>
