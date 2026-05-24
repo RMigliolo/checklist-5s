@@ -821,7 +821,14 @@ if (
   };
 
 const isConnected = connectionStatus === 'Conectado';
-const viewMode = new URLSearchParams(window.location.search).get('modo');
+
+const searchParams = new URLSearchParams(window.location.search);
+const hashQuery = window.location.hash.includes('?')
+  ? window.location.hash.split('?')[1]
+  : '';
+const hashParams = new URLSearchParams(hashQuery);
+
+const viewMode = searchParams.get('modo') || hashParams.get('modo');
 const isRankingOnlyMode = viewMode === 'ranking';
 const isAdminMode = viewMode === 'admin';
 
