@@ -47,6 +47,7 @@ const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
 const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
 const RANKING_AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 minutos
+const RANKING_AUTO_SCROLL_MS = 30 * 60 * 1000; // 30 minutos
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -608,6 +609,199 @@ if (
     playSound('success');
   };
 
+  const exportAuditPDF = (audit) => {
+  if (!audit) return;
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.width;
+  const pageHeight = doc.internal.pageSize.height;
+  const margin = 14;
+
+  const primary = [8, 117, 155];
+  const secondary = [37, 99, 235];
+  const dark = [15, 23, 42];
+  const light = [239, 246, 255];
+  const green = [22, 163, 74];
+  const red = [220, 38, 38];
+
+  const auditItems = Array.isArray(audit.items) ? audit.items : [];
+  const integrantesText =
+    Array.isArray(audit.integrantes) && audit.integrantes.length > 0
+      ? audit.integrantes.join(', ')
+      : 'N/A';
+
+  let y = 16;
+
+  const addHeader = () => {
+    doc.setFillColor(...primary);
+    doc.rect(0, 0, pageWidth, 30, 'F');
+    doc.setFillColor(...secondary);
+    doc.rect(pageWidth - 62, 0, 62, 30, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('CHECKLIST 5S - AUDITORÍA', margin, 13);
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Clasificar · Ordenar · Limpiar · Estandarizar · Disciplina', margin, 22);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`${audit.score || 0}%`, pageWidth - margin, 13, { align: 'right' });
+
+    doc.setFontSize(8);
+    doc.text('RESULTADO', pageWidth - margin, 22, { align: 'right' });
+  };
+
+  const addFooter = () => {
+    const pageNumber = doc.internal.getNumberOfPages();
+    doc.setDrawColor(203, 213, 225);
+    doc.line(margin, pageHeight - 14, pageWidth - margin, pageHeight - 14);
+
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Auditoría 5S · Dinámica multiequipo', margin, pageHeight - 8);
+    doc.text(`Página ${pageNumber}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+  };
+
+  const checkPage = (neededSpace = 12) => {
+    if (y + neededSpace > pageHeight - 20) {
+      addFooter();
+      doc.addPage();
+      addHeader();
+      y = 42;
+    }
+  };
+
+  addHeader();
+  y = 40;
+
+  doc.setFillColor(...light);
+  doc.roundedRect(margin, y, pageWidth - margin * 2, 64, 4, 4, 'F');
+  doc.setDrawColor(191, 219, 254);
+  doc.roundedRect(margin, y, pageWidth - margin * 2, 64, 4, 4, 'S');
+
+  doc.setTextColor(...dark);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Nombre de Equipo', margin + 6, y + 9);
+  doc.text('Departamento', margin + 72, y + 9);
+  doc.text('Responsable', margin + 130, y + 9);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.text(audit.area || 'N/A', margin + 6, y + 17);
+  doc.text(audit.departamento || 'N/A', margin + 72, y + 17);
+  doc.text(audit.responsable || 'N/A', margin + 130, y + 17);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Fecha', margin + 6, y + 30);
+  doc.text('Tiempo', margin + 72, y + 30);
+  doc.text('Piezas OK', margin + 130, y + 30);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(audit.fecha || 'N/A', margin + 6, y + 38);
+  doc.text(audit.tiempo_formateado || formatDuration(audit.tiempo_segundos || 0), margin + 72, y + 38);
+  doc.text(`${audit.completados || 0} / ${audit.total_items || auditItems.length}`, margin + 130, y + 38);
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Integrantes', margin + 6, y + 50);
+
+  doc.setFont('helvetica', 'normal');
+  const integrantesLines = doc.splitTextToSize(integrantesText, pageWidth - margin * 2 - 12);
+  doc.text(integrantesLines.slice(0, 2), margin + 6, y + 58);
+
+  y += 78;
+
+  const tableX = margin;
+  const tableW = pageWidth - margin * 2;
+
+  const col = {
+    num: tableX,
+    item: tableX + 16,
+    qty: tableX + 93,
+    status: tableX + 116,
+    obs: tableX + 145,
+  };
+
+  const drawTableHeader = () => {
+    checkPage(14);
+    doc.setFillColor(...primary);
+    doc.roundedRect(tableX, y, tableW, 10, 2, 2, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('#', col.num + 4, y + 7);
+    doc.text('Herramienta / Componente', col.item, y + 7);
+    doc.text('Cant.', col.qty, y + 7);
+    doc.text('Estado', col.status, y + 7);
+    doc.text('Observaciones', col.obs, y + 7);
+
+    y += 12;
+  };
+
+  drawTableHeader();
+
+  auditItems.forEach((item, index) => {
+    const status = item.disponible ? 'OK' : 'FALTANTE';
+    const obs = item.observaciones || '-';
+    const obsLines = doc.splitTextToSize(obs, 42);
+    const rowHeight = Math.max(10, obsLines.length * 5 + 4);
+
+    checkPage(rowHeight + 4);
+
+    doc.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 250, index % 2 === 0 ? 255 : 252);
+    doc.rect(tableX, y - 2, tableW, rowHeight, 'F');
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(tableX, y + rowHeight - 2, tableX + tableW, y + rowHeight - 2);
+
+    doc.setTextColor(...dark);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(String(index + 1), col.num + 4, y + 5);
+    doc.text(item.objeto || 'N/A', col.item, y + 5);
+    doc.text(String(item.cantidad || ''), col.qty + 3, y + 5);
+
+    doc.setTextColor(...(item.disponible ? green : red));
+    doc.setFont('helvetica', 'bold');
+    doc.text(status, col.status, y + 5);
+
+    doc.setTextColor(71, 85, 105);
+    doc.setFont('helvetica', 'normal');
+    doc.text(obsLines, col.obs, y + 5);
+
+    y += rowHeight;
+  });
+
+  checkPage(26);
+  y += 8;
+
+  doc.setFillColor(255, 251, 235);
+  doc.roundedRect(margin, y, pageWidth - margin * 2, 18, 3, 3, 'F');
+
+  doc.setTextColor(146, 64, 14);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('Compromiso 5S:', margin + 5, y + 7);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text('mantener el área clasificada, ordenada, limpia, estandarizada y con disciplina.', margin + 38, y + 7);
+  doc.text('Este reporte forma parte de una dinámica de aprendizaje operativo.', margin + 5, y + 14);
+
+  addFooter();
+
+  const safeTeam = String(audit.area || 'equipo')
+    .replace(/[^a-z0-9]/gi, '_')
+    .toLowerCase();
+
+  doc.save(`auditoria_5s_${safeTeam}.pdf`);
+};
+
   const getScoreColor = () => {
     if (score >= 90) return 'text-green-400';
     if (score >= 70) return 'text-yellow-300';
@@ -628,20 +822,168 @@ if (
   };
 
   const isConnected = connectionStatus === 'Conectado';
-  const viewMode = new URLSearchParams(window.location.search).get('modo');
-  const isRankingOnlyMode = viewMode === 'ranking';
-    useEffect(() => {
-    if (!isRankingOnlyMode) return;
+const viewMode = new URLSearchParams(window.location.search).get('modo');
+const isRankingOnlyMode = viewMode === 'ranking';
+const isAdminMode = viewMode === 'admin';
 
-    const interval = window.setInterval(() => {
-      loadRanking();
-    }, RANKING_AUTO_REFRESH_MS);
+useEffect(() => {
+  if (!isRankingOnlyMode) return;
 
-    return () => {
-      window.clearInterval(interval);
-    };
-    }, [isRankingOnlyMode]);
-  if (isRankingOnlyMode) {
+  const interval = window.setInterval(() => {
+    loadRanking();
+  }, RANKING_AUTO_REFRESH_MS);
+
+  return () => {
+    window.clearInterval(interval);
+  };
+}, [isRankingOnlyMode]);
+
+useEffect(() => {
+  if (!isRankingOnlyMode) return;
+
+  const scrollRanking = () => {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+
+    if (maxScroll <= 0) return;
+
+    window.scrollTo({
+      top: maxScroll,
+      behavior: 'smooth',
+    });
+
+    window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }, 18000);
+  };
+
+  const interval = window.setInterval(scrollRanking, RANKING_AUTO_SCROLL_MS);
+
+  return () => {
+    window.clearInterval(interval);
+  };
+}, [isRankingOnlyMode]);
+  if (isAdminMode) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-blue-100 p-4 md:p-8 font-sans">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-slate-900 text-white rounded-[32px] p-6 md:p-8 mb-8 shadow-2xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/10 border border-white/20 rounded-3xl p-3">
+                <img
+                  src={logoBlanco}
+                  alt="Logo PI"
+                  className="w-16 h-16 md:w-20 md:h-20 object-contain"
+                />
+              </div>
+
+              <div>
+                <h1 className="text-3xl md:text-5xl font-black">
+                  Administrador 5S
+                </h1>
+                <p className="text-cyan-100 text-base md:text-xl">
+                  Revisión de auditorías y descarga de PDFs
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={loadRanking}
+              className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-2xl px-6 py-4 font-black shadow-lg"
+            >
+              Actualizar datos
+            </button>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-sm font-bold">
+              {isConnected ? <Wifi className="w-4 h-4 text-green-300" /> : <WifiOff className="w-4 h-4 text-red-300" />}
+              <span>Supabase: {connectionStatus}</span>
+            </div>
+
+            <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-sm font-bold">
+              <Trophy className="w-4 h-4 text-yellow-300" />
+              <span>Total auditorías: {ranking.length}</span>
+            </div>
+          </div>
+        </div>
+
+        {loadingRanking ? (
+          <div className="bg-white rounded-3xl p-8 text-slate-500 shadow-md">
+            Cargando auditorías...
+          </div>
+        ) : ranking.length === 0 ? (
+          <div className="bg-white rounded-3xl p-8 text-slate-500 shadow-md">
+            Aún no existen auditorías guardadas.
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {ranking.map((item, index) => (
+              <motion.div
+                key={item.id || index}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-3xl p-5 shadow-md border border-slate-200 grid grid-cols-1 lg:grid-cols-[80px_minmax(180px,1.3fr)_minmax(160px,1fr)_minmax(180px,1fr)_110px_110px_150px] gap-4 items-center"
+              >
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Lugar</div>
+                  <div className="text-3xl font-black text-slate-800">{getRankingBadge(index)}</div>
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Equipo</div>
+                  <div className="text-2xl font-black text-slate-800 truncate">
+                    {item.area || 'Sin equipo'}
+                  </div>
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Departamento</div>
+                  <div className="text-lg font-bold text-slate-700 truncate">
+                    {item.departamento || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="min-w-0">
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Responsable</div>
+                  <div className="text-lg font-bold text-slate-700 truncate">
+                    {item.responsable || 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Score</div>
+                  <div className="text-4xl font-black text-cyan-700">
+                    {item.score}%
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs text-slate-500 uppercase tracking-widest">Tiempo</div>
+                  <div className="text-4xl font-black text-yellow-600">
+                    {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => exportAuditPDF(item)}
+                  className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-4 py-4 font-black flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <Download className="w-5 h-5" />
+                  PDF
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+    if (isRankingOnlyMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
         <div className="max-w-7xl mx-auto">
