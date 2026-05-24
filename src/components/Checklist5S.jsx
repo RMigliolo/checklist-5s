@@ -47,11 +47,11 @@ const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
 const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
 
-const RANKING_AUTO_REFRESH_MS = 20 * 1000;
-const RANKING_AUTO_SCROLL_MS = 20 * 1000;
-const RANKING_SCROLL_DOWN_DURATION_MS = 8000;
-const RANKING_SCROLL_UP_DURATION_MS = 8000;
-const RANKING_SCROLL_BOTTOM_PAUSE_MS = 4000;
+const RANKING_AUTO_REFRESH_MS = 15 * 60 * 1000; // 15 minutos
+const RANKING_AUTO_SCROLL_MS = 15 * 60 * 1000; // 15 minutos
+const RANKING_SCROLL_DOWN_DURATION_MS = 45000; // 45 segundos bajando suave
+const RANKING_SCROLL_UP_DURATION_MS = 45000; // 45 segundos subiendo suave
+const RANKING_SCROLL_BOTTOM_PAUSE_MS = 12000; // 12 segundos abajo
 
 const supabase =
   supabaseUrl && supabaseAnonKey
