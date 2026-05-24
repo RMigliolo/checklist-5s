@@ -46,7 +46,12 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
 const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
-const RANKING_AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 minutos
+
+const RANKING_AUTO_REFRESH_MS = 20 * 1000;
+const RANKING_AUTO_SCROLL_MS = 20 * 1000;
+const RANKING_SCROLL_DOWN_DURATION_MS = 8000;
+const RANKING_SCROLL_UP_DURATION_MS = 8000;
+const RANKING_SCROLL_BOTTOM_PAUSE_MS = 4000;
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -83,6 +88,31 @@ const formatDuration = (totalSeconds = 0) => {
   const minutes = Math.floor(safeSeconds / 60);
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+const smoothScrollToPosition = (targetY, duration = 45000) => {
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+  const startTime = performance.now();
+
+  const easeInOutCubic = (progress) => {
+    return progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+  };
+
+  const animateScroll = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeInOutCubic(progress);
+
+    window.scrollTo(0, startY + distance * easedProgress);
+
+    if (progress < 1) {
+      window.requestAnimationFrame(animateScroll);
+    }
+  };
+
+  window.requestAnimationFrame(animateScroll);
 };
 const parseIntegrantes = (value = '') => {
   return value
@@ -835,12 +865,67 @@ const isAdminMode = viewMode === 'admin';
 useEffect(() => {
   if (!isRankingOnlyMode) return;
 
-  const interval = window.setInterval(() => {
-    loadRanking();
-  }, RANKING_AUTO_REFRESH_MS);
+  let bottomPauseTimeout = null;
+  let cycleInterval = null;
+
+  const runScrollCycle = () => {
+    const maxScroll =
+      document.documentElement.scrollHeight - window.innerHeight;
+
+    if (maxScroll <= 0) return;
+
+    smoothScrollToPosition(maxScroll, RANKING_SCROLL_DOWN_DURATION_MS);
+
+    bottomPauseTimeout = window.setTimeout(() => {
+      smoothScrollToPosition(0, RANKING_SCROLL_UP_DURATION_MS);
+    }, RANKING_SCROLL_DOWN_DURATION_MS + RANKING_SCROLL_BOTTOM_PAUSE_MS);
+  };
+
+  cycleInterval = window.setInterval(runScrollCycle, RANKING_AUTO_SCROLL_MS);
+
+  return () => {
+    if (cycleInterval) {
+      window.clearInterval(cycleInterval);
+    }
+
+    if (bottomPauseTimeout) {
+      window.clearTimeout(bottomPauseTimeout);
+    }
+  };
+}, [isRankingOnlyMode]);
+
+useEffect(() => {
+  if (!isRankingOnlyMode) return;
+
+  let returnTimeout = null;
+
+  const scrollRanking = () => {
+    const maxScroll =
+      document.documentElement.scrollHeight - window.innerHeight;
+
+    if (maxScroll <= 0) return;
+
+    window.scrollTo({
+      top: maxScroll,
+      behavior: 'smooth',
+    });
+
+    returnTimeout = window.setTimeout(() => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }, RANKING_SCROLL_RETURN_DELAY_MS);
+  };
+
+  const interval = window.setInterval(scrollRanking, RANKING_AUTO_SCROLL_MS);
 
   return () => {
     window.clearInterval(interval);
+
+    if (returnTimeout) {
+      window.clearTimeout(returnTimeout);
+    }
   };
 }, [isRankingOnlyMode]);
 
