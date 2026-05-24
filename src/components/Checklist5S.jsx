@@ -820,22 +820,24 @@ if (
     return `#${index + 1}`;
   };
 
-  const isConnected = connectionStatus === 'Conectado';
+const isConnected = connectionStatus === 'Conectado';
 const viewMode = new URLSearchParams(window.location.search).get('modo');
 const isRankingOnlyMode = viewMode === 'ranking';
 const isAdminMode = viewMode === 'admin';
-    useEffect(() => {
-    if (!isRankingOnlyMode) return;
 
-    const interval = window.setInterval(() => {
-      loadRanking();
-    }, RANKING_AUTO_REFRESH_MS);
+useEffect(() => {
+  if (!isRankingOnlyMode) return;
 
-    return () => {
-      window.clearInterval(interval);
-    };
+  const interval = window.setInterval(() => {
+    loadRanking();
+  }, RANKING_AUTO_REFRESH_MS);
 
-    if (isAdminMode) {
+  return () => {
+    window.clearInterval(interval);
+  };
+}, [isRankingOnlyMode]);
+
+if (isAdminMode) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-blue-100 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto">
@@ -870,7 +872,11 @@ const isAdminMode = viewMode === 'admin';
 
           <div className="mt-5 flex flex-wrap gap-3">
             <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 text-sm font-bold">
-              {isConnected ? <Wifi className="w-4 h-4 text-green-300" /> : <WifiOff className="w-4 h-4 text-red-300" />}
+              {isConnected ? (
+                <Wifi className="w-4 h-4 text-green-300" />
+              ) : (
+                <WifiOff className="w-4 h-4 text-red-300" />
+              )}
               <span>Supabase: {connectionStatus}</span>
             </div>
 
@@ -900,7 +906,9 @@ const isAdminMode = viewMode === 'admin';
               >
                 <div>
                   <div className="text-xs text-slate-500 uppercase tracking-widest">Lugar</div>
-                  <div className="text-3xl font-black text-slate-800">{getRankingBadge(index)}</div>
+                  <div className="text-3xl font-black text-slate-800">
+                    {getRankingBadge(index)}
+                  </div>
                 </div>
 
                 <div className="min-w-0">
@@ -953,7 +961,7 @@ const isAdminMode = viewMode === 'admin';
     </div>
   );
 }
-    }, [isRankingOnlyMode]);
+
   if (isRankingOnlyMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
