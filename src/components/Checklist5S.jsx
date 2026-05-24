@@ -671,7 +671,7 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`min-h-[128px] rounded-[30px] border p-4 md:p-5 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(170px,1.1fr)_minmax(150px,1fr)_minmax(460px,2.4fr)_140px_140px] gap-4 items-center ${
+                  className={`min-h-[136px] rounded-[30px] border p-4 md:p-6 shadow-2xl grid grid-cols-1 xl:grid-cols-[72px_minmax(170px,1.1fr)_minmax(230px,1.45fr)_minmax(380px,2.2fr)_140px_140px] 2xl:grid-cols-[80px_minmax(210px,1.2fr)_minmax(280px,1.6fr)_minmax(460px,2.4fr)_150px_150px] gap-4 xl:gap-5 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -693,20 +693,27 @@ Después de guardar se bloqueará esta auditoría.`
                     >
                       Equipo
                     </div>
-                    <div className="text-2xl md:text-3xl font-black leading-tight truncate">
+                    <div
+                      className="text-xl md:text-2xl 2xl:text-3xl font-black leading-tight whitespace-normal break-words max-h-[64px] overflow-hidden"
+                      title={item.area || 'Sin equipo'}
+                    >
                       {item.area || 'Sin equipo'}
                     </div>
+
                   </div>
 
                   <div className="min-w-0">
                     <div
-                      className={`text-[10px] uppercase tracking-widest font-black ${
+                      className={`text-[10px] uppercase tracking-widest font-black mb-1 ${
                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
                       }`}
                     >
                       Departamento
                     </div>
-                    <div className="text-lg md:text-xl font-bold leading-tight truncate">
+                    <div
+                      className="text-base md:text-lg 2xl:text-xl font-black leading-tight whitespace-normal break-words max-h-[48px] overflow-hidden"
+                      title={item.departamento || 'N/A'}
+                    >
                       {item.departamento || 'N/A'}
                     </div>
                   </div>
