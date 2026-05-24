@@ -98,15 +98,42 @@ const formatIntegrantes = (integrantes = []) => {
   if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
   return integrantes.join(', ');
 };
-const formatIntegrantesRanking = (integrantes = [], maxVisible = 6) => {
-  if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
+const normalizeIntegrantes = (integrantes = []) => {
+  if (!Array.isArray(integrantes)) return [];
+  return integrantes
+    .map((name) => String(name).trim())
+    .filter(Boolean)
+    .slice(0, 10);
+};
 
-  const visible = integrantes.slice(0, maxVisible);
-  const extra = integrantes.length - visible.length;
+const renderIntegrantesRanking = (integrantes = [], index = 0) => {
+  const names = normalizeIntegrantes(integrantes);
 
-  return extra > 0
-    ? `${visible.join(', ')} +${extra} más`
-    : visible.join(', ');
+  if (names.length === 0) {
+    return (
+      <span className="text-sm md:text-base font-black">
+        N/A
+      </span>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 2xl:grid-cols-5 gap-1.5 max-h-[72px] overflow-hidden">
+      {names.map((name, nameIndex) => (
+        <span
+          key={`${name}-${nameIndex}`}
+          className={`rounded-full px-2 py-1 text-[11px] md:text-xs 2xl:text-sm font-black leading-none text-center truncate ${
+            index <= 2
+              ? 'bg-white/55 text-slate-950'
+              : 'bg-white/12 text-white border border-white/10'
+          }`}
+          title={name}
+        >
+          {name}
+        </span>
+      ))}
+    </div>
+  );
 };
 
 export default function Checklist5S() {
@@ -644,7 +671,7 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`min-h-[112px] rounded-[30px] border p-4 md:p-5 shadow-2xl grid grid-cols-1 xl:grid-cols-[72px_minmax(190px,1.5fr)_minmax(160px,1.1fr)_minmax(260px,1.7fr)_150px_150px] gap-4 items-center ${
+                  className={`min-h-[128px] rounded-[30px] border p-4 md:p-5 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(170px,1.1fr)_minmax(150px,1fr)_minmax(460px,2.4fr)_140px_140px] gap-4 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -675,9 +702,9 @@ Después de guardar se bloqueará esta auditoría.`
                     <div
                       className={`text-[10px] uppercase tracking-widest font-black ${
                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
-                     }`}
+                      }`}
                     >
-                     Departamento
+                      Departamento
                     </div>
                     <div className="text-lg md:text-xl font-bold leading-tight truncate">
                       {item.departamento || 'N/A'}
@@ -686,51 +713,50 @@ Después de guardar se bloqueará esta auditoría.`
 
                   <div className="min-w-0">
                     <div
+                      className={`text-[10px] uppercase tracking-widest font-black mb-2 ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
+                      Integrantes
+                    </div>
+
+                    {renderIntegrantesRanking(item.integrantes, index)}
+                  </div>
+
+                  <div className="text-left xl:text-center">
+                    <div
                       className={`text-[10px] uppercase tracking-widest font-black ${
                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
-                     }`}
+                      }`}
                     >
-                     Integrantes
-                    </div>
-                    <div className="text-sm md:text-base font-black leading-snug max-h-[44px] overflow-hidden">
-                      {formatIntegrantesRanking(item.integrantes)}
-                    </div>
-                 </div>
-
-                 <div className="text-left xl:text-center">
-                   <div
-                     className={`text-[10px] uppercase tracking-widest font-black ${
-                       index <= 2 ? 'text-slate-600' : 'text-cyan-100'
-                     }`}
-                    >
-                     Score
+                      Score
                     </div>
                     <div
                       className={`text-4xl md:text-5xl font-black ${
                         index <= 2 ? 'text-slate-950' : 'text-cyan-200'
                       }`}
-                     >
+                    >
                       {item.score}%
-                     </div>
                     </div>
+                  </div>
 
-                    <div className="text-left xl:text-center">
-                     <div
-                       className={`text-[10px] uppercase tracking-widest font-black ${
-                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
-                       }`}
-                      >
-                       Tiempo
-                      </div>
-                      <div
-                        className={`text-4xl md:text-5xl font-black ${
-                          index <= 2 ? 'text-slate-950' : 'text-yellow-200'
-                        }`}
-                       >
-                        {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
-                       </div>
-                      </div>
-                    </motion.div>
+                  <div className="text-left xl:text-center">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
+                      Tiempo
+                    </div>
+                    <div
+                      className={`text-4xl md:text-5xl font-black ${
+                        index <= 2 ? 'text-slate-950' : 'text-yellow-200'
+                      }`}
+                    >
+                      {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                    </div>
+                  </div>
+                </motion.div>
                   ))}
             </div>
           )}
