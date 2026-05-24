@@ -46,6 +46,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const eventCode = import.meta.env.VITE_EVENT_CODE || 'evento-demo-5s';
 const logoDorado = `${import.meta.env.BASE_URL}logos/Logos-PI-02.png`;
 const logoBlanco = `${import.meta.env.BASE_URL}logos/Logos-PI-04.png`;
+const RANKING_AUTO_REFRESH_MS = 30 * 60 * 1000; // 30 minutos
 
 const supabase =
   supabaseUrl && supabaseAnonKey
@@ -83,15 +84,68 @@ const formatDuration = (totalSeconds = 0) => {
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
+const parseIntegrantes = (value = '') => {
+  return value
+    .split(/[,\n]/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => name.split(/\s+/)[0])
+    .map((name) => name.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ-]/g, ''))
+    .filter(Boolean)
+    .slice(0, 10);
+};
+
+const formatIntegrantes = (integrantes = []) => {
+  if (!Array.isArray(integrantes) || integrantes.length === 0) return 'N/A';
+  return integrantes.join(', ');
+};
+const normalizeIntegrantes = (integrantes = []) => {
+  if (!Array.isArray(integrantes)) return [];
+  return integrantes
+    .map((name) => String(name).trim())
+    .filter(Boolean)
+    .slice(0, 10);
+};
+
+const renderIntegrantesRanking = (integrantes = [], index = 0) => {
+  const names = normalizeIntegrantes(integrantes);
+
+  if (names.length === 0) {
+    return (
+      <span className="text-sm md:text-base font-black">
+        N/A
+      </span>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 2xl:grid-cols-5 gap-1.5 max-h-[72px] overflow-hidden">
+      {names.map((name, nameIndex) => (
+        <span
+          key={`${name}-${nameIndex}`}
+          className={`rounded-full px-2 py-1 text-[11px] md:text-xs 2xl:text-sm font-black leading-none text-center truncate ${
+            index <= 2
+              ? 'bg-white/55 text-slate-950'
+              : 'bg-white/12 text-white border border-white/10'
+          }`}
+          title={name}
+        >
+          {name}
+        </span>
+      ))}
+    </div>
+  );
+};
 
 export default function Checklist5S() {
   const [logged, setLogged] = useState(false);
   const [loginData, setLoginData] = useState({
-    equipo: '',
-    departamento: '',
-    responsable: '',
-    password: '',
-  });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantesText: '',
+  password: '',
+});
   const [ranking, setRanking] = useState([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -104,11 +158,12 @@ export default function Checklist5S() {
   const [auditClosed, setAuditClosed] = useState(false);
 
   const [formData, setFormData] = useState({
-    equipo: '',
-    departamento: '',
-    responsable: '',
-    fecha: new Date().toISOString().split('T')[0],
-  });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantes: [],
+  fecha: new Date().toISOString().split('T')[0],
+});
 
   const [items, setItems] = useState(createInitialItems);
 
@@ -200,26 +255,30 @@ export default function Checklist5S() {
   }, [logged, timerStartedAt, auditClosed]);
 
   const login = () => {
-    if (
-      !loginData.equipo.trim() ||
-      !loginData.departamento.trim() ||
-      !loginData.responsable.trim() ||
-      !loginData.password.trim()
-    ) {
-      alert('Ingresa nombre de equipo, departamento, responsable y contraseña rápida.');
-      return;
-    }
+    const integrantes = parseIntegrantes(loginData.integrantesText);
+
+if (
+  !loginData.equipo.trim() ||
+  !loginData.departamento.trim() ||
+  !loginData.responsable.trim() ||
+  integrantes.length === 0 ||
+  !loginData.password.trim()
+) {
+  alert('Ingresa nombre de equipo, departamento, responsable, integrantes y contraseña rápida.');
+  return;
+}
 
     setLogged(true);
     setAuditClosed(false);
     setElapsedSeconds(0);
     setTimerStartedAt(Date.now());
     setFormData({
-      equipo: loginData.equipo.trim(),
-      departamento: loginData.departamento.trim(),
-      responsable: loginData.responsable.trim(),
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: loginData.equipo.trim(),
+  departamento: loginData.departamento.trim(),
+  responsable: loginData.responsable.trim(),
+  integrantes,
+  fecha: new Date().toISOString().split('T')[0],
+});
     playSound('success');
   };
 
@@ -245,6 +304,9 @@ export default function Checklist5S() {
     if (!formData.equipo.trim()) return 'Ingresa el nombre de equipo.';
     if (!formData.departamento.trim()) return 'Ingresa el departamento.';
     if (!formData.responsable.trim()) return 'Ingresa el responsable.';
+    if (!Array.isArray(formData.integrantes) || formData.integrantes.length === 0) {
+  return 'Ingresa al menos un integrante del equipo.';
+}
     if (!formData.fecha) return 'Selecciona la fecha.';
     if (elapsedSeconds <= 0) return 'El cronómetro aún no registra tiempo. Espera al menos 1 segundo antes de guardar.';
     return null;
@@ -258,16 +320,21 @@ export default function Checklist5S() {
     }
 
     const confirmed = window.confirm(
-      `¿Guardar evaluación final?
+  `¿Guardar evaluación final?
 
-Equipo: ${formData.equipo}
-Departamento: ${formData.departamento}
-Responsable: ${formData.responsable}
-Score: ${score}%
-Tiempo: ${formatDuration(elapsedSeconds)}
+    Equipo: ${formData.equipo}
+    Departamento: ${formData.departamento}
+    Responsable: ${formData.responsable}
+    Integrantes: ${
+        Array.isArray(formData.integrantes) && formData.integrantes.length > 0
+          ? formData.integrantes.join(', ')
+          : 'N/A'
+      }
+    Score: ${score}%
+    Tiempo: ${formatDuration(elapsedSeconds)}
 
-Después de guardar se bloqueará esta auditoría.`
-    );
+    Después de guardar se bloqueará esta auditoría.`
+   );
 
     if (!confirmed) return;
 
@@ -281,6 +348,7 @@ Después de guardar se bloqueará esta auditoría.`
       area: formData.equipo.trim(),
       departamento: formData.departamento.trim(),
       responsable: formData.responsable.trim(),
+      integrantes: formData.integrantes,
       fecha: formData.fecha,
       score,
       completados: completedItems,
@@ -313,11 +381,12 @@ Después de guardar se bloqueará esta auditoría.`
 
     setItems(createInitialItems());
     setFormData({
-      equipo: loginData.equipo || '',
-      departamento: loginData.departamento || '',
-      responsable: loginData.responsable || '',
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: loginData.equipo || '',
+  departamento: loginData.departamento || '',
+  responsable: loginData.responsable || '',
+  integrantes: parseIntegrantes(loginData.integrantesText),
+  fecha: new Date().toISOString().split('T')[0],
+});
     setAuditClosed(false);
     setElapsedSeconds(0);
     setTimerStartedAt(Date.now());
@@ -333,17 +402,19 @@ Después de guardar se bloqueará esta auditoría.`
 
     setLogged(false);
     setLoginData({
-      equipo: '',
-      departamento: '',
-      responsable: '',
-      password: '',
-    });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantesText: '',
+  password: '',
+});
     setFormData({
-      equipo: '',
-      departamento: '',
-      responsable: '',
-      fecha: new Date().toISOString().split('T')[0],
-    });
+  equipo: '',
+  departamento: '',
+  responsable: '',
+  integrantes: [],
+  fecha: new Date().toISOString().split('T')[0],
+});
     setItems(createInitialItems());
     setAuditClosed(false);
     setElapsedSeconds(0);
@@ -360,6 +431,11 @@ Después de guardar se bloqueará esta auditoría.`
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
+
+    const integrantesPdf =
+      Array.isArray(formData.integrantes) && formData.integrantes.length > 0
+        ? formData.integrantes.join(', ')
+        : 'N/A';
     const margin = 14;
     const primary = [8, 117, 155];
     const secondary = [37, 99, 235];
@@ -414,9 +490,9 @@ Después de guardar se bloqueará esta auditoría.`
     y = 40;
 
     doc.setFillColor(...light);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'F');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'F');
     doc.setDrawColor(191, 219, 254);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 45, 4, 4, 'S');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'S');
 
     doc.setTextColor(...dark);
     doc.setFont('helvetica', 'bold');
@@ -441,7 +517,14 @@ Después de guardar se bloqueará esta auditoría.`
     doc.text(formatDuration(elapsedSeconds), margin + 72, y + 38);
     doc.text(`${completedItems} / ${items.length}`, margin + 130, y + 38);
 
-    y += 58;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Integrantes', margin + 6, y + 50);
+
+    doc.setFont('helvetica', 'normal');
+    const integrantesLines = doc.splitTextToSize(integrantesPdf, pageWidth - margin * 2 - 12);
+    doc.text(integrantesLines.slice(0, 2), margin + 6, y + 58);
+
+    y += 76;
 
     const tableX = margin;
     const tableW = pageWidth - margin * 2;
@@ -547,7 +630,17 @@ Después de guardar se bloqueará esta auditoría.`
   const isConnected = connectionStatus === 'Conectado';
   const viewMode = new URLSearchParams(window.location.search).get('modo');
   const isRankingOnlyMode = viewMode === 'ranking';
+    useEffect(() => {
+    if (!isRankingOnlyMode) return;
 
+    const interval = window.setInterval(() => {
+      loadRanking();
+    }, RANKING_AUTO_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+    }, [isRankingOnlyMode]);
   if (isRankingOnlyMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
@@ -606,7 +699,7 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`rounded-[30px] border p-5 md:p-6 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-4 items-center ${
+                  className={`min-h-[136px] rounded-[30px] border p-4 md:p-6 shadow-2xl grid grid-cols-1 xl:grid-cols-[72px_minmax(170px,1.1fr)_minmax(230px,1.45fr)_minmax(380px,2.2fr)_140px_140px] 2xl:grid-cols-[80px_minmax(210px,1.2fr)_minmax(280px,1.6fr)_minmax(460px,2.4fr)_150px_150px] gap-4 xl:gap-5 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -616,56 +709,90 @@ Después de guardar se bloqueará esta auditoría.`
                       : 'bg-white/10 border-white/15 text-white'
                   }`}
                 >
-                  <div className="md:col-span-1 text-5xl md:text-6xl font-black text-center md:text-left">
+                  <div className="text-4xl md:text-5xl font-black text-center xl:text-left shrink-0">
                     {getRankingBadge(index)}
                   </div>
 
-                  <div className="md:col-span-3">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
                       Equipo
                     </div>
-                    <div className="text-3xl md:text-4xl font-black leading-tight">
+                    <div
+                      className="text-xl md:text-2xl 2xl:text-3xl font-black leading-tight whitespace-normal break-words max-h-[64px] overflow-hidden"
+                      title={item.area || 'Sin equipo'}
+                    >
                       {item.area || 'Sin equipo'}
                     </div>
+
                   </div>
 
-                  <div className="md:col-span-2">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black mb-1 ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
                       Departamento
                     </div>
-                    <div className="text-xl md:text-2xl font-bold">
+                    <div
+                      className="text-base md:text-lg 2xl:text-xl font-black leading-tight whitespace-normal break-words max-h-[48px] overflow-hidden"
+                      title={item.departamento || 'N/A'}
+                    >
                       {item.departamento || 'N/A'}
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
-                      Responsable
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black mb-2 ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
+                      Integrantes
                     </div>
-                    <div className="text-xl md:text-2xl font-bold">
-                      {item.responsable || 'N/A'}
-                    </div>
+
+                    {renderIntegrantesRanking(item.integrantes, index)}
                   </div>
 
-                  <div className="md:col-span-2 text-left md:text-center">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                  <div className="text-left xl:text-center">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
                       Score
                     </div>
-                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-cyan-200'}`}>
+                    <div
+                      className={`text-4xl md:text-5xl font-black ${
+                        index <= 2 ? 'text-slate-950' : 'text-cyan-200'
+                      }`}
+                    >
                       {item.score}%
                     </div>
                   </div>
 
-                  <div className="md:col-span-2 text-left md:text-center">
-                    <div className={`text-xs uppercase tracking-widest font-black ${index <= 2 ? 'text-slate-600' : 'text-cyan-100'}`}>
+                  <div className="text-left xl:text-center">
+                    <div
+                      className={`text-[10px] uppercase tracking-widest font-black ${
+                        index <= 2 ? 'text-slate-600' : 'text-cyan-100'
+                      }`}
+                    >
                       Tiempo
                     </div>
-                    <div className={`text-5xl md:text-6xl font-black ${index <= 2 ? 'text-slate-950' : 'text-yellow-200'}`}>
+                    <div
+                      className={`text-4xl md:text-5xl font-black ${
+                        index <= 2 ? 'text-slate-950' : 'text-yellow-200'
+                      }`}
+                    >
                       {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                  ))}
             </div>
           )}
 
@@ -736,6 +863,22 @@ Después de guardar se bloqueará esta auditoría.`
                 onChange={(e) => setLoginData({ ...loginData, responsable: e.target.value })}
                 className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-black text-slate-700 mb-2">
+               Integrantes del equipo
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Ej. Ana, Luis, Pedro, Carlos"
+                value={loginData.integrantesText}
+                onChange={(e) => setLoginData({ ...loginData, integrantesText: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300 resize-none"
+              />
+              <p className="text-xs text-slate-400 mt-2">
+                 Máximo 10 integrantes. Escribe solo el primer nombre, separado por coma.
+              </p>
             </div>
 
             <div>
@@ -857,7 +1000,7 @@ Después de guardar se bloqueará esta auditoría.`
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-5 p-5 md:p-8 bg-slate-50 border-b border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-5 p-5 md:p-8 bg-slate-50 border-b border-slate-200">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Nombre de Equipo</label>
             <input
@@ -887,6 +1030,16 @@ Después de guardar se bloqueará esta auditoría.`
               className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
             />
           </div>
+
+          <div>
+           <label className="block text-sm font-bold text-slate-700 mb-2">Integrantes</label>
+           <input
+             type="text"
+             value={formatIntegrantes(formData.integrantes)}
+            disabled
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
+          />
+        </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Fecha</label>
@@ -1099,26 +1252,33 @@ Después de guardar se bloqueará esta auditoría.`
                   key={item.id || index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="bg-white rounded-2xl p-5 shadow-md border border-slate-200 grid grid-cols-1 md:grid-cols-7 gap-4 items-center"
+                  className="bg-white rounded-2xl p-5 shadow-md border border-slate-200 grid grid-cols-1 lg:grid-cols-[80px_minmax(180px,1.6fr)_minmax(170px,1.3fr)_minmax(150px,1.2fr)_120px_120px_120px] gap-4 items-center"
                 >
                   <div>
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Lugar</div>
                     <div className="text-3xl font-black text-slate-800">{getRankingBadge(index)}</div>
                   </div>
 
-                  <div>
-                    <div className="text-sm text-slate-500 uppercase tracking-widest">Equipo</div>
-                    <div className="text-2xl font-black text-slate-800">{item.area || 'Sin equipo'}</div>
-                  </div>
+                  
+                    <div className="min-w-0">
+                      <div className="text-sm text-slate-500 uppercase tracking-widest">Equipo</div>
+                      <div className="text-2xl font-black text-slate-800 truncate">
+                        {item.area || 'Sin equipo'}
+                      </div>
+                    </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Departamento</div>
-                    <div className="text-lg font-bold text-slate-700">{item.departamento || 'N/A'}</div>
+                    <div className="text-lg font-bold text-slate-700 truncate">
+                      {item.departamento || 'N/A'}
+                    </div>
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm text-slate-500 uppercase tracking-widest">Responsable</div>
-                    <div className="text-lg font-bold text-slate-700">{item.responsable || 'N/A'}</div>
+                    <div className="text-lg font-bold text-slate-700 truncate">
+                      {item.responsable || 'N/A'}
+                    </div>
                   </div>
 
                   <div>
