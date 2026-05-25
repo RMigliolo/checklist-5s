@@ -177,18 +177,18 @@ const renderIntegrantesRanking = (integrantes = [], index = 0) => {
 
   if (names.length === 0) {
     return (
-      <span className="text-lg md:text-2xl xl:text-3xl font-black">
+      <span className="text-base md:text-xl xl:text-2xl font-black">
         N/A
       </span>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-5 gap-2 max-h-[104px] overflow-hidden">
+    <div className="grid grid-cols-2 xl:grid-cols-5 gap-1.5 max-h-[58px] overflow-hidden">
       {names.map((name, nameIndex) => (
         <span
           key={`${name}-${nameIndex}`}
-          className={`rounded-full px-3 py-2 text-sm md:text-base xl:text-lg 2xl:text-xl font-black leading-none text-center truncate ${
+          className={`rounded-full px-2.5 py-1.5 text-xs md:text-sm xl:text-base 2xl:text-lg font-black leading-none text-center truncate ${
             index <= 2
               ? 'bg-white/65 text-slate-950'
               : 'bg-white/18 text-white border border-white/15'
@@ -2334,23 +2334,23 @@ if (isAdminMode) {
 
 if (isRankingOnlyMode) {
     return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-3 md:p-5 xl:p-6 text-white font-sans overflow-x-hidden">
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-2 md:p-4 xl:p-5 text-white font-sans overflow-x-hidden">
         <div className="w-full max-w-none mx-0">
-          <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
+          <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-5 mb-5">
             <div>
               <div className="flex items-center gap-4 mb-3">
                 <div className="bg-white/10 border border-white/20 rounded-3xl p-3 md:p-4 flex items-center justify-center">
                   <img
                     src={logoBlanco}
                     alt="Logo PI"
-                    className="w-20 h-20 md:w-28 md:h-28 xl:w-32 xl:h-32 object-contain"
+                    className="w-16 h-16 md:w-20 md:h-20 xl:w-24 xl:h-24 object-contain"
                   />
                 </div>
                 <div>
-                  <h1 className="text-5xl md:text-6xl xl:text-7xl 2xl:text-8xl font-black tracking-tight leading-[0.95]">
+                  <h1 className="text-4xl md:text-5xl xl:text-6xl 2xl:text-7xl font-black tracking-tight leading-[0.95]">
                     Ranking 5S en Vivo
                   </h1>
-                  <p className="text-cyan-100 text-lg md:text-2xl xl:text-3xl font-bold mt-3">
+                  <p className="text-cyan-100 text-base md:text-xl xl:text-2xl font-bold mt-2">
                     Dinámica 5S · Sistema de Gestión Integral
                   </p>
                 </div>
@@ -2392,7 +2392,7 @@ if (isRankingOnlyMode) {
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`w-full min-h-[190px] rounded-[36px] border p-5 md:p-7 xl:p-8 shadow-2xl grid grid-cols-1 xl:grid-cols-[110px_minmax(280px,1.3fr)_minmax(320px,1.4fr)_minmax(620px,2.5fr)_190px_190px] gap-5 xl:gap-8 items-center ${
+                  className={`w-full min-h-[92px] rounded-[24px] border p-3 md:p-4 xl:p-4 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(210px,1.25fr)_minmax(230px,1.25fr)_minmax(440px,2fr)_150px_150px] gap-3 xl:gap-5 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -2402,7 +2402,7 @@ if (isRankingOnlyMode) {
                       : 'bg-white/10 border-white/15 text-white'
                   }`}
                 >
-                  <div className="text-5xl md:text-6xl xl:text-7xl font-black text-center xl:text-left shrink-0">
+                  <div className="text-3xl md:text-4xl xl:text-5xl font-black text-center xl:text-left shrink-0">
                     {getRankingBadge(index)}
                   </div>
 
@@ -2432,7 +2432,7 @@ if (isRankingOnlyMode) {
                       Departamento
                     </div>
                     <div
-                      className="text-xl md:text-2xl xl:text-3xl font-black leading-tight whitespace-normal break-words max-h-[86px] overflow-hidden"
+                      className="text-base md:text-lg xl:text-2xl font-black leading-tight whitespace-normal break-words max-h-[48px] overflow-hidden"
                       title={item.departamento || 'N/A'}
                     >
                       {item.departamento || 'N/A'}
@@ -2460,7 +2460,7 @@ if (isRankingOnlyMode) {
                       Score
                     </div>
                     <div
-                      className={`text-5xl md:text-6xl xl:text-7xl font-black leading-none ${
+                      className={`text-3xl md:text-4xl xl:text-5xl font-black leading-none ${
                         index <= 2 ? 'text-slate-950' : 'text-cyan-200'
                       }`}
                     >
@@ -2477,7 +2477,7 @@ if (isRankingOnlyMode) {
                       Tiempo
                     </div>
                     <div
-                       className={`text-5xl md:text-6xl xl:text-7xl font-black leading-none ${
+                       className={`text-3xl md:text-4xl xl:text-5xl font-black leading-none ${
                         index <= 2 ? 'text-slate-950' : 'text-yellow-200'
                       }`}
                     >
