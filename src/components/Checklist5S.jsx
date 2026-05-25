@@ -2393,7 +2393,7 @@ if (isRankingOnlyMode) {
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`w-full min-h-[122px] rounded-[24px] border p-3 md:p-4 xl:p-4 shadow-2xl grid
+                  className={`w-full min-h-[122px] rounded-[24px] border p-4 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(210px,1.15fr)_minmax(220px,1.15fr)_minmax(560px,2.45fr)_145px_145px] gap-5 items-center overflow-visible ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
