@@ -87,6 +87,7 @@ const baseItems = [
   { cantidad: 1, objeto: 'Martillo' },
   { cantidad: 1, objeto: 'Llave' },
   { cantidad: 1, objeto: 'Destornillador Cruz' },
+  { cantidad: 1, objeto: 'Desarmador Plano' },
   { cantidad: 1, objeto: 'Pinzas' },
   { cantidad: 1, objeto: 'Pinza Tenaza' },
   { cantidad: 1, objeto: 'Llave Doble Punta' },
