@@ -177,29 +177,29 @@ const renderIntegrantesRanking = (integrantes = [], index = 0) => {
 
   if (names.length === 0) {
     return (
-      <span className="text-base md:text-xl xl:text-2xl font-black">
+      <span className="text-sm md:text-base xl:text-lg font-black leading-none">
         N/A
       </span>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-5 gap-1.5 max-h-[58px] overflow-hidden">
-      {names.map((name, nameIndex) => (
-        <span
-          key={`${name}-${nameIndex}`}
-          className={`rounded-full px-2.5 py-1.5 text-xs md:text-sm xl:text-base 2xl:text-lg font-black leading-none text-center truncate ${
-            index <= 2
-              ? 'bg-white/65 text-slate-950'
-              : 'bg-white/18 text-white border border-white/15'
-          }`}
-          title={name}
-        >
-          {name}
-        </span>
-      ))}
+   <div className="w-full grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-x-1.5 gap-y-1">
+     {names.map((name, nameIndex) => (
+       <span
+         key={`${name}-${nameIndex}`}
+         className={`rounded-full px-2 py-1 text-[9px] md:text-[10px] xl:text-xs 2xl:text-sm font-black leading-none text-center whitespace-nowrap overflow-hidden ${
+           index <= 2
+             ? 'bg-white/75 text-slate-950'
+             : 'bg-white/18 text-white border border-white/15'
+         }`}
+         title={name}
+       >
+         {name}
+       </span>
+     ))}
    </div>
- );
+  );
 };
 
 const DashboardMetricCard = ({
@@ -2386,13 +2386,13 @@ if (isRankingOnlyMode) {
               <p className="text-cyan-100 text-lg">Cuando los equipos guarden sus evaluaciones aparecerán aquí en tiempo real.</p>
             </div>
           ) : (
-            <div className="grid gap-4">
+             <div className="w-full grid gap-2.5">
               {ranking.slice(0, 12).map((item, index) => (
                 <motion.div
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`w-full min-h-[92px] rounded-[24px] border p-3 md:p-4 xl:p-4 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(210px,1.25fr)_minmax(230px,1.25fr)_minmax(440px,2fr)_150px_150px] gap-3 xl:gap-5 items-center ${
+                  className={`w-full min-h-[122px] rounded-[24px] border p-3 md:p-4 xl:p-4 shadow-2xl grid grid-cols-1 xl:grid-cols-[70px_minmax(210px,1.15fr)_minmax(220px,1.15fr)_minmax(560px,2.45fr)_145px_145px] gap-3 xl:gap-5 items-center overflow-visible ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -2439,9 +2439,9 @@ if (isRankingOnlyMode) {
                     </div>
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 self-center">
                     <div
-                      className={`text-[10px] uppercase tracking-widest font-black mb-2 ${
+                      className={`text-[9px] xl:text-[10px] uppercase tracking-widest font-black mb-1 ${
                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
                       }`}
                     >
