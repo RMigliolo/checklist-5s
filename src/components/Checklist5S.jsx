@@ -14,9 +14,33 @@ import {
   Wifi,
   WifiOff,
   Clock,
+  Users,
+  UserRound,
+  UserRoundCheck,
+  Star,
+  Timer,
+  CalendarDays,
+  RefreshCw,
+  PackageCheck,
+  PackageX,
+  Gauge,
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { motion } from 'framer-motion';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  CartesianGrid,
+} from 'recharts';
 
 /*
 =========================================================
@@ -90,6 +114,16 @@ const formatDuration = (totalSeconds = 0) => {
   const seconds = safeSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 };
+
+const toPositiveNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : 0;
+};
+
+const getParticipantesTotal = (hombres, mujeres) => {
+  return toPositiveNumber(hombres) + toPositiveNumber(mujeres);
+};
+
 const smoothScrollToPosition = (targetY, duration = 60000) => {
   const startY = window.scrollY;
   const distance = targetY - startY;
@@ -143,28 +177,233 @@ const renderIntegrantesRanking = (integrantes = [], index = 0) => {
 
   if (names.length === 0) {
     return (
-      <span className="text-sm md:text-base font-black">
+      <span className="text-lg md:text-2xl xl:text-3xl font-black">
         N/A
       </span>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 2xl:grid-cols-5 gap-1.5 max-h-[72px] overflow-hidden">
+    <div className="grid grid-cols-2 xl:grid-cols-5 gap-2 max-h-[104px] overflow-hidden">
       {names.map((name, nameIndex) => (
         <span
           key={`${name}-${nameIndex}`}
-          className={`rounded-full px-2 py-1 text-[11px] md:text-xs 2xl:text-sm font-black leading-none text-center truncate ${
+          className={`rounded-full px-3 py-2 text-sm md:text-base xl:text-lg 2xl:text-xl font-black leading-none text-center truncate ${
             index <= 2
-              ? 'bg-white/55 text-slate-950'
-              : 'bg-white/12 text-white border border-white/10'
+              ? 'bg-white/65 text-slate-950'
+              : 'bg-white/18 text-white border border-white/15'
           }`}
           title={name}
         >
           {name}
         </span>
       ))}
-    </div>
+   </div>
+ );
+};
+
+const DashboardMetricCard = ({
+  title,
+  value,
+  subtitle,
+  icon,
+  color = 'cyan',
+  progress = null,
+}) => {
+  const colorMap = {
+    cyan: {
+      text: 'text-cyan-600',
+      bg: 'bg-cyan-50',
+      bar: 'bg-cyan-500',
+      glow: 'from-cyan-100 to-blue-50',
+    },
+    green: {
+      text: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      bar: 'bg-emerald-500',
+      glow: 'from-emerald-100 to-green-50',
+    },
+    blue: {
+      text: 'text-blue-600',
+      bg: 'bg-blue-50',
+      bar: 'bg-blue-500',
+      glow: 'from-blue-100 to-sky-50',
+    },
+    pink: {
+      text: 'text-pink-500',
+      bg: 'bg-pink-50',
+      bar: 'bg-pink-500',
+      glow: 'from-pink-100 to-rose-50',
+    },
+    amber: {
+      text: 'text-amber-600',
+      bg: 'bg-amber-50',
+      bar: 'bg-amber-500',
+      glow: 'from-amber-100 to-yellow-50',
+    },
+    purple: {
+      text: 'text-purple-600',
+      bg: 'bg-purple-50',
+      bar: 'bg-purple-500',
+      glow: 'from-purple-100 to-violet-50',
+    },
+  };
+
+  const theme = colorMap[color] || colorMap.cyan;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden bg-white rounded-[28px] p-4 border border-white shadow-[0_16px_38px_rgba(15,23,42,0.09),inset_5px_5px_12px_rgba(15,23,42,0.035),inset_-5px_-5px_12px_rgba(255,255,255,0.95)] min-h-[142px]"
+    >
+      <div className={`absolute -right-10 -top-10 w-32 h-32 rounded-full bg-gradient-to-br ${theme.glow} opacity-80`} />
+
+      <div className="relative z-10 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className={`text-[11px] uppercase tracking-[0.18em] font-black ${theme.text}`}>
+            {title}
+          </div>
+
+          <div className="text-3xl md:text-4xl font-black text-slate-900 mt-2 leading-none">
+            {value}
+          </div>
+
+          <div className="text-sm text-slate-500 font-semibold mt-2">
+            {subtitle}
+          </div>
+        </div>
+
+        <div className={`w-12 h-12 rounded-2xl ${theme.bg} ${theme.text} flex items-center justify-center shadow-[inset_4px_4px_10px_rgba(15,23,42,0.06),inset_-4px_-4px_10px_rgba(255,255,255,0.95)]`}>
+          {icon}
+        </div>
+      </div>
+
+      {progress !== null && (
+        <div className="relative z-10 mt-4 w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+          <div
+            className={`h-full ${theme.bar} rounded-full transition-all duration-700`}
+            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+          />
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+const DashboardPanel = ({ title, subtitle, children, className = '' }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white rounded-[28px] p-4 border border-white shadow-[0_16px_38px_rgba(15,23,42,0.09),inset_4px_4px_10px_rgba(15,23,42,0.03),inset_-4px_-4px_10px_rgba(255,255,255,0.95)] ${className}`}
+    >
+      <div className="mb-3">
+        <h3 className="text-lg font-black text-slate-900 leading-tight">
+          {title}
+        </h3>
+        <p className="text-sm text-slate-500 font-semibold">
+          {subtitle}
+        </p>
+      </div>
+
+      {children}
+    </motion.div>
+  );
+};
+
+const DashboardSmallKpi = ({
+  title,
+  value,
+  subtitle,
+  icon,
+  color = 'cyan',
+}) => {
+  const colorMap = {
+    cyan: {
+      text: 'text-cyan-600',
+      bg: 'bg-cyan-50',
+      border: 'border-cyan-100',
+    },
+    green: {
+      text: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+      border: 'border-emerald-100',
+    },
+    amber: {
+      text: 'text-amber-600',
+      bg: 'bg-amber-50',
+      border: 'border-amber-100',
+    },
+    purple: {
+      text: 'text-purple-600',
+      bg: 'bg-purple-50',
+      border: 'border-purple-100',
+    },
+    red: {
+      text: 'text-red-500',
+      bg: 'bg-red-50',
+      border: 'border-red-100',
+    },
+  };
+
+  const theme = colorMap[color] || colorMap.cyan;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-[26px] p-4 border border-white shadow-[0_14px_32px_rgba(15,23,42,0.085),inset_4px_4px_10px_rgba(15,23,42,0.03),inset_-4px_-4px_10px_rgba(255,255,255,0.95)] min-h-[112px]"
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className={`w-14 h-14 rounded-2xl ${theme.bg} ${theme.border} ${theme.text} border flex items-center justify-center shadow-[inset_4px_4px_10px_rgba(15,23,42,0.06),inset_-4px_-4px_10px_rgba(255,255,255,0.95)]`}
+        >
+          {icon}
+        </div>
+
+        <div className="min-w-0">
+          <div className={`text-[11px] uppercase tracking-[0.18em] font-black ${theme.text}`}>
+            {title}
+          </div>
+
+          <div className="text-2xl font-black text-slate-900 leading-none mt-1">
+            {value}
+          </div>
+
+          <div className="text-sm text-slate-500 font-semibold mt-2 truncate">
+            {subtitle}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const DashboardTableCard = ({ title, subtitle, children }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-[28px] p-4 border border-white shadow-[0_16px_38px_rgba(15,23,42,0.09),inset_4px_4px_10px_rgba(15,23,42,0.03),inset_-4px_-4px_10px_rgba(255,255,255,0.95)]"
+    >
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <h3 className="text-2xl font-black text-slate-900">
+            {title}
+          </h3>
+          <p className="text-sm text-slate-500 font-semibold">
+            {subtitle}
+          </p>
+        </div>
+
+        <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center shadow-inner">
+          <Trophy className="w-6 h-6 text-amber-500" />
+        </div>
+      </div>
+
+      {children}
+    </motion.div>
   );
 };
 
@@ -175,9 +414,12 @@ export default function Checklist5S() {
   departamento: '',
   responsable: '',
   integrantesText: '',
+  hombres: '',
+  mujeres: '',
   password: '',
 });
   const [ranking, setRanking] = useState([]);
+  const [adminView, setAdminView] = useState('auditorias');
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [saving, setSaving] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(
@@ -193,6 +435,9 @@ export default function Checklist5S() {
   departamento: '',
   responsable: '',
   integrantes: [],
+  hombres: 0,
+  mujeres: 0,
+  participantesTotal: 0,
   fecha: new Date().toISOString().split('T')[0],
 });
 
@@ -286,32 +531,58 @@ export default function Checklist5S() {
   }, [logged, timerStartedAt, auditClosed]);
 
   const login = () => {
-    const integrantes = parseIntegrantes(loginData.integrantesText);
+  const hombres = Number(loginData.hombres || 0);
+  const mujeres = Number(loginData.mujeres || 0);
+  const participantesTotal = hombres + mujeres;
 
-if (
-  !loginData.equipo.trim() ||
-  !loginData.departamento.trim() ||
-  !loginData.responsable.trim() ||
-  integrantes.length === 0 ||
-  !loginData.password.trim()
-) {
-  alert('Ingresa nombre de equipo, departamento, responsable, integrantes y contraseña rápida.');
-  return;
-}
+  if (
+    !loginData.equipo.trim() ||
+    !loginData.departamento.trim() ||
+    !loginData.responsable.trim() ||
+    !loginData.password.trim()
+  ) {
+    alert('Ingresa nombre de equipo, departamento, responsable y contraseña rápida.');
+    return;
+  }
 
-    setLogged(true);
-    setAuditClosed(false);
-    setElapsedSeconds(0);
-    setTimerStartedAt(Date.now());
-    setFormData({
+  if (!Number.isInteger(hombres) || hombres < 0) {
+    alert('Ingresa una cantidad válida de hombres.');
+    return;
+  }
+
+  if (!Number.isInteger(mujeres) || mujeres < 0) {
+    alert('Ingresa una cantidad válida de mujeres.');
+    return;
+  }
+
+  if (participantesTotal <= 0) {
+    alert('Ingresa al menos 1 participante entre hombres y mujeres.');
+    return;
+  }
+
+  if (participantesTotal > 10) {
+    alert('El equipo no puede tener más de 10 participantes.');
+    return;
+  }
+
+  setLogged(true);
+  setAuditClosed(false);
+  setElapsedSeconds(0);
+  setTimerStartedAt(Date.now());
+
+  setFormData({
   equipo: loginData.equipo.trim(),
   departamento: loginData.departamento.trim(),
   responsable: loginData.responsable.trim(),
-  integrantes,
+  integrantes: parseIntegrantes(loginData.integrantesText),
+  hombres,
+  mujeres,
+  participantesTotal,
   fecha: new Date().toISOString().split('T')[0],
 });
-    playSound('success');
-  };
+
+  playSound('success');
+};
 
   const updateItem = (index, field, value) => {
     if (auditClosed) {
@@ -329,19 +600,38 @@ if (
   };
 
   const validateAudit = () => {
-    if (!supabase) {
-      return 'Falta configurar Supabase. Revisa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.';
-    }
-    if (!formData.equipo.trim()) return 'Ingresa el nombre de equipo.';
-    if (!formData.departamento.trim()) return 'Ingresa el departamento.';
-    if (!formData.responsable.trim()) return 'Ingresa el responsable.';
-    if (!Array.isArray(formData.integrantes) || formData.integrantes.length === 0) {
-  return 'Ingresa al menos un integrante del equipo.';
-}
-    if (!formData.fecha) return 'Selecciona la fecha.';
-    if (elapsedSeconds <= 0) return 'El cronómetro aún no registra tiempo. Espera al menos 1 segundo antes de guardar.';
-    return null;
-  };
+  if (!supabase) {
+    return 'Falta configurar Supabase. Revisa VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.';
+  }
+
+  if (!formData.equipo.trim()) return 'Ingresa el nombre de equipo.';
+  if (!formData.departamento.trim()) return 'Ingresa el departamento.';
+  if (!formData.responsable.trim()) return 'Ingresa el responsable.';
+
+  if (!Number.isInteger(Number(formData.hombres)) || Number(formData.hombres) < 0) {
+    return 'La cantidad de hombres no es válida.';
+  }
+
+  if (!Number.isInteger(Number(formData.mujeres)) || Number(formData.mujeres) < 0) {
+    return 'La cantidad de mujeres no es válida.';
+  }
+
+  if (Number(formData.participantesTotal) <= 0) {
+    return 'Debe existir al menos 1 participante.';
+  }
+
+  if (Number(formData.participantesTotal) > 10) {
+    return 'El equipo no puede tener más de 10 participantes.';
+  }
+
+  if (!formData.fecha) return 'Selecciona la fecha.';
+
+  if (elapsedSeconds <= 0) {
+    return 'El cronómetro aún no registra tiempo. Espera al menos 1 segundo antes de guardar.';
+  }
+
+  return null;
+};
 
   const saveAudit = async () => {
     const errorMessage = validateAudit();
@@ -353,19 +643,17 @@ if (
     const confirmed = window.confirm(
   `¿Guardar evaluación final?
 
-    Equipo: ${formData.equipo}
-    Departamento: ${formData.departamento}
-    Responsable: ${formData.responsable}
-    Integrantes: ${
-        Array.isArray(formData.integrantes) && formData.integrantes.length > 0
-          ? formData.integrantes.join(', ')
-          : 'N/A'
-      }
-    Score: ${score}%
-    Tiempo: ${formatDuration(elapsedSeconds)}
+  Equipo: ${formData.equipo}
+  Departamento: ${formData.departamento}
+  Responsable: ${formData.responsable}
+  Participantes: ${formData.participantesTotal}
+  Hombres: ${formData.hombres}
+  Mujeres: ${formData.mujeres}
+  Score: ${score}%
+  Tiempo: ${formatDuration(elapsedSeconds)}
 
-    Después de guardar se bloqueará esta auditoría.`
-   );
+  Después de guardar se bloqueará esta auditoría.`
+  );
 
     if (!confirmed) return;
 
@@ -379,7 +667,10 @@ if (
       area: formData.equipo.trim(),
       departamento: formData.departamento.trim(),
       responsable: formData.responsable.trim(),
-      integrantes: formData.integrantes,
+      integrantes: formData.integrantes || [],
+      hombres: Number(formData.hombres),
+      mujeres: Number(formData.mujeres),
+      participantes_total: Number(formData.participantesTotal),
       fecha: formData.fecha,
       score,
       completados: completedItems,
@@ -411,13 +702,19 @@ if (
     if (!confirmed) return;
 
     setItems(createInitialItems());
+    const hombres = Number(loginData.hombres || 0);
+    const mujeres = Number(loginData.mujeres || 0);
+
     setFormData({
-  equipo: loginData.equipo || '',
-  departamento: loginData.departamento || '',
-  responsable: loginData.responsable || '',
-  integrantes: parseIntegrantes(loginData.integrantesText),
-  fecha: new Date().toISOString().split('T')[0],
-});
+      equipo: '',
+      departamento: '',
+      responsable: '',
+      integrantes: [],
+      hombres: 0,
+      mujeres: 0,
+      participantesTotal: 0,
+      fecha: new Date().toISOString().split('T')[0],
+    });
     setAuditClosed(false);
     setElapsedSeconds(0);
     setTimerStartedAt(Date.now());
@@ -433,19 +730,25 @@ if (
 
     setLogged(false);
     setLoginData({
-  equipo: '',
-  departamento: '',
-  responsable: '',
-  integrantesText: '',
-  password: '',
-});
+      equipo: '',
+      departamento: '',
+      responsable: '',
+      integrantesText: '',
+      hombres: '',
+      mujeres: '',
+      password: '',
+    });
+
     setFormData({
-  equipo: '',
-  departamento: '',
-  responsable: '',
-  integrantes: [],
-  fecha: new Date().toISOString().split('T')[0],
-});
+      equipo: '',
+      departamento: '',
+      responsable: '',
+      integrantes: [],
+      hombres: 0,
+      mujeres: 0,
+      participantesTotal: 0,
+      fecha: new Date().toISOString().split('T')[0],
+    });
     setItems(createInitialItems());
     setAuditClosed(false);
     setElapsedSeconds(0);
@@ -521,9 +824,9 @@ if (
     y = 40;
 
     doc.setFillColor(...light);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'F');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 72, 4, 4, 'F');
     doc.setDrawColor(191, 219, 254);
-    doc.roundedRect(margin, y, pageWidth - margin * 2, 62, 4, 4, 'S');
+    doc.roundedRect(margin, y, pageWidth - margin * 2, 72, 4, 4, 'S');
 
     doc.setTextColor(...dark);
     doc.setFont('helvetica', 'bold');
@@ -553,9 +856,19 @@ if (
 
     doc.setFont('helvetica', 'normal');
     const integrantesLines = doc.splitTextToSize(integrantesPdf, pageWidth - margin * 2 - 12);
-    doc.text(integrantesLines.slice(0, 2), margin + 6, y + 58);
+    doc.text(integrantesLines.slice(0, 1), margin + 6, y + 58);
 
-    y += 76;
+    doc.setFont('helvetica', 'bold');
+    doc.text('Participantes', margin + 6, y + 68);
+
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+     `${formData.participantesTotal || 0} total · Hombres: ${formData.hombres || 0} · Mujeres: ${formData.mujeres || 0}`,
+     margin + 42,
+     y + 68
+    );
+
+    y += 86;
 
     const tableX = margin;
     const tableW = pageWidth - margin * 2;
@@ -660,6 +973,10 @@ if (
       ? audit.integrantes.join(', ')
       : 'N/A';
 
+      const hombresAudit = Number(audit.hombres || 0);
+  const mujeresAudit = Number(audit.mujeres || 0);
+  const participantesAudit =
+    Number(audit.participantes_total || hombresAudit + mujeresAudit || 0);
   let y = 16;
 
   const addHeader = () => {
@@ -710,9 +1027,9 @@ if (
   y = 40;
 
   doc.setFillColor(...light);
-  doc.roundedRect(margin, y, pageWidth - margin * 2, 64, 4, 4, 'F');
+  doc.roundedRect(margin, y, pageWidth - margin * 2, 72, 4, 4, 'F');
   doc.setDrawColor(191, 219, 254);
-  doc.roundedRect(margin, y, pageWidth - margin * 2, 64, 4, 4, 'S');
+  doc.roundedRect(margin, y, pageWidth - margin * 2, 72, 4, 4, 'S');
 
   doc.setTextColor(...dark);
   doc.setFont('helvetica', 'bold');
@@ -742,9 +1059,19 @@ if (
 
   doc.setFont('helvetica', 'normal');
   const integrantesLines = doc.splitTextToSize(integrantesText, pageWidth - margin * 2 - 12);
-  doc.text(integrantesLines.slice(0, 2), margin + 6, y + 58);
+  doc.text(integrantesLines.slice(0, 1), margin + 6, y + 58);
 
-  y += 78;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Participantes', margin + 6, y + 68);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text(
+    `${participantesAudit} total · Hombres: ${hombresAudit} · Mujeres: ${mujeresAudit}`,
+    margin + 42,
+    y + 68
+  );
+
+  y += 86;
 
   const tableX = margin;
   const tableW = pageWidth - margin * 2;
@@ -851,6 +1178,179 @@ if (
     return `#${index + 1}`;
   };
 
+  const dashboardStats = useMemo(() => {
+  const totalAuditorias = ranking.length;
+
+  const totalScore = ranking.reduce(
+    (sum, audit) => sum + Number(audit.score || 0),
+    0
+  );
+
+  const promedioScore =
+    totalAuditorias > 0 ? Math.round(totalScore / totalAuditorias) : 0;
+
+  const totalTiempo = ranking.reduce(
+    (sum, audit) => sum + Number(audit.tiempo_segundos || 0),
+    0
+  );
+
+  const tiempoPromedio =
+    totalAuditorias > 0 ? Math.round(totalTiempo / totalAuditorias) : 0;
+
+  const totalHombres = ranking.reduce(
+    (sum, audit) => sum + Number(audit.hombres || 0),
+    0
+  );
+
+  const totalMujeres = ranking.reduce(
+    (sum, audit) => sum + Number(audit.mujeres || 0),
+    0
+  );
+
+  const totalParticipantes = ranking.reduce((sum, audit) => {
+    const participantes = Number(audit.participantes_total || 0);
+    const hombres = Number(audit.hombres || 0);
+    const mujeres = Number(audit.mujeres || 0);
+
+    return sum + (participantes || hombres + mujeres);
+  }, 0);
+
+  const totalPiezas = ranking.reduce(
+    (sum, audit) => sum + Number(audit.total_items || 0),
+    0
+  );
+
+  const piezasEncontradas = ranking.reduce(
+    (sum, audit) => sum + Number(audit.completados || 0),
+    0
+  );
+
+  const piezasFaltantes = ranking.reduce(
+    (sum, audit) => sum + Number(audit.faltantes || 0),
+    0
+  );
+
+  const cumplimientoPiezas =
+    totalPiezas > 0 ? Math.round((piezasEncontradas / totalPiezas) * 100) : 0;
+
+  const faltantesPorPieza = {};
+
+  ranking.forEach((audit) => {
+    const auditItems = Array.isArray(audit.items) ? audit.items : [];
+
+    auditItems.forEach((item) => {
+      if (!item.disponible) {
+        const name = item.objeto || 'Sin nombre';
+        faltantesPorPieza[name] = (faltantesPorPieza[name] || 0) + 1;
+      }
+    });
+  });
+
+  const piezaMasFaltanteEntry = Object.entries(faltantesPorPieza).sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+
+  const piezaMasFaltante = piezaMasFaltanteEntry
+    ? {
+        nombre: piezaMasFaltanteEntry[0],
+        veces: piezaMasFaltanteEntry[1],
+      }
+    : {
+        nombre: 'N/A',
+        veces: 0,
+      };
+
+  const departamentosMap = {};
+
+  ranking.forEach((audit) => {
+    const departamento = audit.departamento || 'Sin departamento';
+
+    if (!departamentosMap[departamento]) {
+      departamentosMap[departamento] = {
+        departamento,
+        auditorias: 0,
+        scoreTotal: 0,
+        participantes: 0,
+      };
+    }
+
+    departamentosMap[departamento].auditorias += 1;
+    departamentosMap[departamento].scoreTotal += Number(audit.score || 0);
+    departamentosMap[departamento].participantes += Number(
+      audit.participantes_total ||
+        Number(audit.hombres || 0) + Number(audit.mujeres || 0)
+    );
+  });
+
+  const departamentos = Object.values(departamentosMap)
+    .map((item) => ({
+      ...item,
+      promedio:
+        item.auditorias > 0 ? Math.round(item.scoreTotal / item.auditorias) : 0,
+    }))
+    .sort((a, b) => b.auditorias - a.auditorias);
+
+  const mejorEquipo = ranking[0] || null;
+
+  const mejorTiempo =
+    ranking.length > 0
+      ? [...ranking].sort(
+          (a, b) =>
+            Number(a.tiempo_segundos || 999999) -
+            Number(b.tiempo_segundos || 999999)
+        )[0]
+      : null;
+
+  const genderData = [
+    { name: 'Hombres', value: totalHombres },
+    { name: 'Mujeres', value: totalMujeres },
+  ];
+
+  const piezasData = [
+    { name: 'Encontradas', value: piezasEncontradas },
+    { name: 'Faltantes', value: piezasFaltantes },
+  ];
+
+  const departmentData = departamentos.slice(0, 6).map((item) => ({
+    name: item.departamento,
+    auditorias: item.auditorias,
+    promedio: item.promedio,
+    participantes: item.participantes,
+  }));
+
+  const scoreTrend = [...ranking]
+    .sort((a, b) => new Date(a.fecha_guardado || 0) - new Date(b.fecha_guardado || 0))
+    .slice(-10)
+    .map((audit, index) => ({
+      name: `#${index + 1}`,
+      score: Number(audit.score || 0),
+    }));
+
+  return {
+    totalAuditorias,
+    promedioScore,
+    tiempoPromedio,
+    totalParticipantes,
+    totalHombres,
+    totalMujeres,
+    totalPiezas,
+    piezasEncontradas,
+    piezasFaltantes,
+    cumplimientoPiezas,
+    piezaMasFaltante,
+    departamentos,
+    mejorEquipo,
+    mejorTiempo,
+    top5: ranking.slice(0, 5),
+    auditoriasRecientes: [...ranking]
+      .sort((a, b) => new Date(b.fecha_guardado || 0) - new Date(a.fecha_guardado || 0))
+      .slice(0, 5),
+    genderData,
+    piezasData,
+    departmentData,
+    scoreTrend,
+  };
+}, [ranking]);
 const isConnected = connectionStatus === 'Conectado';
 
 const searchParams = new URLSearchParams(window.location.search);
@@ -862,6 +1362,7 @@ const hashParams = new URLSearchParams(hashQuery);
 const viewMode = searchParams.get('modo') || hashParams.get('modo');
 const isRankingOnlyMode = viewMode === 'ranking';
 const isAdminMode = viewMode === 'admin';
+const liveRankingUrl = `${window.location.origin}${window.location.pathname}?modo=ranking`;
 
 useEffect(() => {
   if (!isRankingOnlyMode) return;
@@ -968,49 +1469,14 @@ useEffect(() => {
   };
 }, [isRankingOnlyMode]);
 
-useEffect(() => {
-  if (!isRankingOnlyMode) return;
-
-  let returnTimeout = null;
-
-  const scrollRanking = () => {
-    const maxScroll =
-      document.documentElement.scrollHeight - window.innerHeight;
-
-    if (maxScroll <= 0) return;
-
-    window.scrollTo({
-      top: maxScroll,
-      behavior: 'smooth',
-    });
-
-    returnTimeout = window.setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-    }, RANKING_SCROLL_RETURN_DELAY_MS);
-  };
-
-  const interval = window.setInterval(scrollRanking, RANKING_AUTO_SCROLL_MS);
-
-  return () => {
-    window.clearInterval(interval);
-
-    if (returnTimeout) {
-      window.clearTimeout(returnTimeout);
-    }
-  };
-}, [isRankingOnlyMode]);
-
 if (isAdminMode) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-blue-100 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-slate-900 text-white rounded-[32px] p-6 md:p-8 mb-8 shadow-2xl">
+    <div className="min-h-screen w-full bg-[radial-gradient(circle_at_top_left,#e0f2fe_0,transparent_34%),radial-gradient(circle_at_bottom_right,#fef3c7_0,transparent_30%),linear-gradient(135deg,#f8fafc,#ffffff,#eef8ff)] p-3 md:p-5 xl:p-6 font-sans overflow-x-hidden">
+      <div className="w-full max-w-none mx-0">
+        <div className="w-full bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 text-white rounded-[34px] p-5 md:p-6 mb-6 shadow-[0_28px_80px_rgba(15,23,42,0.22)] border border-white/10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="bg-white/10 border border-white/20 rounded-3xl p-3">
+              <div className="bg-white/10 border border-white/20 rounded-3xl p-3 shadow-[inset_4px_4px_12px_rgba(255,255,255,0.08),0_12px_30px_rgba(0,0,0,0.25)]">
                 <img
                   src={logoBlanco}
                   alt="Logo PI"
@@ -1028,12 +1494,21 @@ if (isAdminMode) {
               </div>
             </div>
 
-            <button
-              onClick={loadRanking}
-              className="bg-cyan-500 hover:bg-cyan-600 text-white rounded-2xl px-6 py-4 font-black shadow-lg"
-            >
-              Actualizar datos
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setAdminView(adminView === 'dashboard' ? 'auditorias' : 'dashboard')}
+                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-2xl px-6 py-4 font-black shadow-xl transition-all"
+              >
+                {adminView === 'dashboard' ? 'Ver auditorías' : 'Dashboard'}
+              </button>
+
+              <button
+                onClick={loadRanking}
+                className="bg-slate-950 hover:bg-slate-800 text-white rounded-2xl px-6 py-4 font-black shadow-xl transition-all"
+              >
+                Actualizar datos
+              </button>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -1053,98 +1528,829 @@ if (isAdminMode) {
           </div>
         </div>
 
-        {loadingRanking ? (
-          <div className="bg-white rounded-3xl p-8 text-slate-500 shadow-md">
-            Cargando auditorías...
+        {adminView === 'auditorias' ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+              <div className="bg-white rounded-[28px] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] border border-white">
+                <div className="text-xs uppercase tracking-[0.22em] text-slate-400 font-black mb-2">
+                  Auditorías
+                </div>
+                <div className="text-5xl font-black text-slate-900">
+                  {dashboardStats.totalAuditorias}
+                </div>
+                <div className="text-sm text-slate-500 font-semibold mt-2">
+                  Checklists realizados
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[28px] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] border border-white">
+                <div className="text-xs uppercase tracking-[0.22em] text-slate-400 font-black mb-2">
+                  Participantes
+                </div>
+                <div className="text-5xl font-black text-slate-900">
+                  {dashboardStats.totalParticipantes}
+                </div>
+                <div className="text-sm text-slate-500 font-semibold mt-2">
+                  H: {dashboardStats.totalHombres} · M: {dashboardStats.totalMujeres}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[28px] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] border border-white">
+                <div className="text-xs uppercase tracking-[0.22em] text-slate-400 font-black mb-2">
+                  Promedio
+              </div>
+              <div className="text-5xl font-black text-green-600">
+                {dashboardStats.promedioScore}%
+              </div>
+              <div className="text-sm text-slate-500 font-semibold mt-2">
+                Cumplimiento general
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[28px] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.10)] border border-white">
+              <div className="text-xs uppercase tracking-[0.22em] text-slate-400 font-black mb-2">
+                Faltantes
+              </div>
+              <div className="text-5xl font-black text-red-500">
+                {dashboardStats.piezasFaltantes}
+              </div>
+              <div className="text-sm text-slate-500 font-semibold mt-2">
+                Piezas no encontradas
+              </div>
+            </div>
           </div>
-        ) : ranking.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 text-slate-500 shadow-md">
-            Aún no existen auditorías guardadas.
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {ranking.map((item, index) => (
-              <motion.div
-                key={item.id || index}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-3xl p-5 shadow-md border border-slate-200 grid grid-cols-1 lg:grid-cols-[80px_minmax(180px,1.3fr)_minmax(160px,1fr)_minmax(180px,1fr)_110px_110px_150px] gap-4 items-center"
+
+    <div className="bg-white rounded-[32px] p-5 md:p-6 border border-white shadow-[0_20px_50px_rgba(15,23,42,0.10)]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900">
+            Auditorías realizadas
+          </h2>
+          <p className="text-slate-500 font-medium">
+            Revisión de equipos registrados y descarga de reportes PDF.
+          </p>
+        </div>
+
+        <div className="bg-slate-100 rounded-2xl px-5 py-3 text-sm font-black text-slate-700">
+          Total: {ranking.length}
+        </div>
+      </div>
+
+      {loadingRanking ? (
+        <div className="bg-slate-50 rounded-3xl p-8 text-slate-500 shadow-inner">
+          Cargando auditorías...
+        </div>
+      ) : ranking.length === 0 ? (
+        <div className="bg-slate-50 rounded-3xl p-8 text-slate-500 shadow-inner">
+          Aún no existen auditorías guardadas.
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {ranking.map((item, index) => (
+            <motion.div
+              key={item.id || index}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-slate-50 rounded-3xl p-5 border border-slate-100 grid grid-cols-1 lg:grid-cols-[80px_minmax(180px,1.3fr)_minmax(160px,1fr)_minmax(180px,1fr)_110px_110px_150px] gap-4 items-center shadow-sm"
+            >
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Lugar
+                </div>
+                <div className="text-3xl font-black text-slate-800">
+                  {getRankingBadge(index)}
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Equipo
+                </div>
+                <div className="text-2xl font-black text-slate-800 truncate">
+                  {item.area || 'Sin equipo'}
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Departamento
+                </div>
+                <div className="text-lg font-bold text-slate-700 truncate">
+                  {item.departamento || 'N/A'}
+                </div>
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Responsable
+                </div>
+                <div className="text-lg font-bold text-slate-700 truncate">
+                  {item.responsable || 'N/A'}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Score
+                </div>
+                <div className="text-4xl font-black text-cyan-700">
+                  {item.score}%
+                </div>
+              </div>
+
+              <div>
+                <div className="text-xs text-slate-500 uppercase tracking-widest">
+                  Tiempo
+                </div>
+                <div className="text-4xl font-black text-yellow-600">
+                  {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                </div>
+              </div>
+
+              <button
+                onClick={() => exportAuditPDF(item)}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-4 py-4 font-black flex items-center justify-center gap-2 shadow-lg"
               >
-                <div>
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Lugar</div>
-                  <div className="text-3xl font-black text-slate-800">
-                    {getRankingBadge(index)}
-                  </div>
-                </div>
+                <Download className="w-5 h-5" />
+                PDF
+              </button>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  </>
+) : (
+  <>
+    <div className="grid grid-cols-1 xl:grid-cols-[300px_minmax(0,1fr)] gap-6 w-full">
+      {/* SIDEBAR */}
+<aside className="relative overflow-hidden bg-white rounded-[40px] p-5 border border-white shadow-[0_28px_80px_rgba(15,23,42,0.14)] flex flex-col justify-between min-h-[680px]">
+  <div className="absolute -top-20 -right-20 w-48 h-48 bg-cyan-100 rounded-full blur-2xl opacity-80" />
+  <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-amber-100 rounded-full blur-2xl opacity-80" />
 
-                <div className="min-w-0">
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Equipo</div>
-                  <div className="text-2xl font-black text-slate-800 truncate">
-                    {item.area || 'Sin equipo'}
-                  </div>
-                </div>
+  <div className="relative z-10">
+    <div className="flex flex-col items-center text-center mb-5">
+      <div className="w-24 h-24 rounded-[30px] bg-gradient-to-br from-white to-slate-100 shadow-[inset_8px_8px_18px_rgba(15,23,42,0.08),inset_-8px_-8px_18px_rgba(255,255,255,0.95),0_16px_32px_rgba(15,23,42,0.14)] flex items-center justify-center mb-3">
+        <img
+          src={logoDorado}
+          alt="Logo 5S"
+          className="w-18 h-18 object-contain"
+       />
+  </div>
 
-                <div className="min-w-0">
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Departamento</div>
-                  <div className="text-lg font-bold text-slate-700 truncate">
-                    {item.departamento || 'N/A'}
-                  </div>
-                </div>
+      <h2 className="text-2xl font-black text-slate-900">
+        DINÁMICA 5S
+      </h2>
+      <p className="text-sm text-slate-500 font-semibold">
+        Cultura de excelencia operativa
+      </p>
+    </div>
 
-                <div className="min-w-0">
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Responsable</div>
-                  <div className="text-lg font-bold text-slate-700 truncate">
-                    {item.responsable || 'N/A'}
-                  </div>
-                </div>
+    <div className="grid gap-3">
+      <button className="group bg-cyan-50 border border-cyan-100 text-cyan-700 rounded-2xl px-4 py-3 font-black text-left shadow-[inset_4px_4px_10px_rgba(15,23,42,0.05),inset_-4px_-4px_10px_rgba(255,255,255,0.95)] flex items-center justify-between">
+        <span>📊 Resumen ejecutivo</span>
+        <span className="text-cyan-500">●</span>
+      </button>
 
-                <div>
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Score</div>
-                  <div className="text-4xl font-black text-cyan-700">
-                    {item.score}%
-                  </div>
-                </div>
+      <a
+        href={liveRankingUrl}
+        target="_blank"
+        rel="noreferrer"
+        className="bg-white hover:bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl px-4 py-3 font-black text-left shadow-sm flex items-center justify-between transition-all"
+      >
+        <span>🏆 Ranking en vivo</span>
+        <span className="text-slate-300">↗</span>
+      </a>
 
-                <div>
-                  <div className="text-xs text-slate-500 uppercase tracking-widest">Tiempo</div>
-                  <div className="text-4xl font-black text-yellow-600">
-                    {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
-                  </div>
-                </div>
+      <button
+        onClick={() => setAdminView('auditorias')}
+        className="bg-white hover:bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl px-4 py-3 font-black text-left shadow-sm flex items-center justify-between transition-all"
+      >
+        <span>📄 Auditorías</span>
+        <span className="text-slate-300">›</span>
+      </button>
 
-                <button
-                  onClick={() => exportAuditPDF(item)}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-4 py-4 font-black flex items-center justify-center gap-2 shadow-lg"
-                >
-                  <Download className="w-5 h-5" />
-                  PDF
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        )}
+      <button
+        onClick={loadRanking}
+        className="bg-white hover:bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl px-4 py-3 font-black text-left shadow-sm flex items-center justify-between transition-all"
+      >
+        <span>🔄 Actualizar datos</span>
+        <span className="text-slate-300">›</span>
+      </button>
+    </div>
+
+    <div className="mt-6 bg-slate-50 rounded-[30px] p-5 shadow-[inset_6px_6px_14px_rgba(15,23,42,0.06),inset_-6px_-6px_14px_rgba(255,255,255,0.95)]">
+      <div className="text-xs uppercase tracking-widest text-slate-400 font-black mb-2">
+        Estado general
+      </div>
+
+      <div className="grid gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-600">Auditorías</span>
+          <span className="text-lg font-black text-slate-900">{dashboardStats.totalAuditorias}</span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-600">Promedio</span>
+          <span className="text-lg font-black text-emerald-600">{dashboardStats.promedioScore}%</span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-600">Faltantes</span>
+          <span className="text-lg font-black text-red-500">{dashboardStats.piezasFaltantes}</span>
+        </div>
       </div>
     </div>
-  );
-}
+  </div>
 
-  if (isRankingOnlyMode) {
+  <div className="relative z-10 bg-slate-50 rounded-[30px] p-5 shadow-[inset_6px_6px_14px_rgba(15,23,42,0.06),inset_-6px_-6px_14px_rgba(255,255,255,0.95)]">
+    <div className="flex items-center gap-2 mb-3">
+      {isConnected ? (
+        <Wifi className="w-4 h-4 text-green-500" />
+      ) : (
+        <WifiOff className="w-4 h-4 text-red-500" />
+      )}
+      <span className="text-sm font-black text-slate-700">
+        Conexión Supabase
+      </span>
+    </div>
+
+    <div className={`inline-flex px-3 py-1 rounded-full text-xs font-black ${
+      isConnected
+        ? 'bg-green-100 text-green-700'
+        : 'bg-red-100 text-red-600'
+    }`}>
+      {connectionStatus}
+    </div>
+
+    <div className="mt-6 pt-5 border-t border-slate-200">
+      <div className="text-3xl font-black text-slate-900">
+        {new Date().toLocaleTimeString('es-MX', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
+      </div>
+      <div className="text-xs text-slate-500 font-semibold mt-1">
+        Última visualización
+      </div>
+    </div>
+  </div>
+</aside>
+
+      {/* DASHBOARD PRINCIPAL */}
+      <section className="w-full min-w-0 bg-white/95 rounded-[38px] p-5 md:p-6 xl:p-7 border border-white shadow-[0_28px_80px_rgba(15,23,42,0.14)]">
+        {/* HEADER */}
+<div className="relative overflow-hidden rounded-[34px] bg-gradient-to-br from-slate-950 via-cyan-950 to-blue-900 p-5 md:p-6 mb-5 text-white shadow-[0_22px_60px_rgba(15,23,42,0.20)]">
+  <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full bg-cyan-400/20 blur-3xl" />
+  <div className="absolute -bottom-24 -left-16 w-72 h-72 rounded-full bg-amber-300/20 blur-3xl" />
+
+  <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+    <div>
+      <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 mb-4 text-xs font-black uppercase tracking-widest text-cyan-100">
+        <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+        Centro de Control 5S
+      </div>
+
+      <h2 className="text-4xl md:text-5xl font-black tracking-tight">
+        Dashboard Ejecutivo
+      </h2>
+
+      <p className="text-cyan-100 text-base md:text-xl font-semibold mt-2 max-w-3xl">
+        Visualización integral de participación, cumplimiento, tiempos, hallazgos y desempeño de equipos.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-2 gap-3 min-w-[300px] max-w-[360px]">
+      <div className="bg-white/10 border border-white/15 rounded-3xl p-4 backdrop-blur-md">
+        <div className="text-xs uppercase tracking-widest text-cyan-100 font-black">
+          Fecha
+        </div>
+        <div className="text-xl font-black mt-1">
+          {new Date().toLocaleDateString('es-MX', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })}
+        </div>
+      </div>
+
+      <div className="bg-white/10 border border-white/15 rounded-3xl p-4 backdrop-blur-md">
+        <div className="text-xs uppercase tracking-widest text-cyan-100 font-black">
+          Mejor score
+        </div>
+        <div className="text-xl font-black mt-1">
+          {dashboardStats.mejorEquipo?.score || 0}%
+        </div>
+      </div>
+
+      <button
+        onClick={loadRanking}
+        className="col-span-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-3xl px-5 py-3 font-black shadow-xl transition-all"
+      >
+        🔄 Actualizar datos
+      </button>
+
+      <button
+        onClick={() => setAdminView('auditorias')}
+        className="col-span-2 bg-white/10 hover:bg-white/15 border border-white/15 text-white rounded-3xl px-5 py-3 font-black transition-all"
+      >
+        Ver auditorías
+      </button>
+    </div>
+  </div>
+</div>
+
+        {/* KPI SUPERIORES */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-5">
+  <DashboardMetricCard
+    title="Checklists realizados"
+    value={dashboardStats.totalAuditorias}
+    subtitle="Total registros"
+    color="cyan"
+    icon={<ClipboardCheck className="w-8 h-8" />}
+  />
+
+  <DashboardMetricCard
+    title="Participantes totales"
+    value={dashboardStats.totalParticipantes}
+    subtitle="En la dinámica"
+    color="green"
+    icon={<Users className="w-8 h-8" />}
+  />
+
+  <DashboardMetricCard
+    title="Hombres"
+    value={dashboardStats.totalHombres}
+    subtitle={
+      dashboardStats.totalParticipantes > 0
+        ? `${Math.round((dashboardStats.totalHombres / dashboardStats.totalParticipantes) * 100)}% del total`
+        : '0% del total'
+    }
+    color="blue"
+    progress={
+      dashboardStats.totalParticipantes > 0
+        ? Math.round((dashboardStats.totalHombres / dashboardStats.totalParticipantes) * 100)
+        : 0
+    }
+    icon={<UserRound className="w-8 h-8" />}
+  />
+
+  <DashboardMetricCard
+    title="Mujeres"
+    value={dashboardStats.totalMujeres}
+    subtitle={
+      dashboardStats.totalParticipantes > 0
+        ? `${Math.round((dashboardStats.totalMujeres / dashboardStats.totalParticipantes) * 100)}% del total`
+        : '0% del total'
+    }
+    color="pink"
+    progress={
+      dashboardStats.totalParticipantes > 0
+        ? Math.round((dashboardStats.totalMujeres / dashboardStats.totalParticipantes) * 100)
+        : 0
+    }
+    icon={<UserRoundCheck className="w-8 h-8" />}
+  />
+
+  <DashboardMetricCard
+    title="Promedio general"
+    value={`${dashboardStats.promedioScore}%`}
+    subtitle={
+      dashboardStats.promedioScore >= 90
+        ? 'Excelente'
+        : dashboardStats.promedioScore >= 70
+        ? 'Aceptable'
+        : 'Requiere atención'
+    }
+    color="amber"
+    progress={dashboardStats.promedioScore}
+    icon={<Star className="w-8 h-8" />}
+  />
+
+  <DashboardMetricCard
+    title="Tiempo promedio"
+    value={formatDuration(dashboardStats.tiempoPromedio)}
+    subtitle="Por checklist"
+    color="purple"
+    icon={<Timer className="w-8 h-8" />}
+  />
+</div>
+
+        {/* GRAFICAS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5 mb-5">
+  <DashboardPanel
+    title="Cumplimiento general"
+    subtitle="Promedio de todas las auditorías"
+  >
+    <div className="h-[200px] flex items-center justify-center">
+      <div className="relative w-40 h-40 rounded-full bg-gradient-to-br from-white to-slate-100 shadow-[inset_12px_12px_24px_rgba(15,23,42,0.08),inset_-12px_-12px_24px_rgba(255,255,255,0.95),0_20px_45px_rgba(15,23,42,0.12)] flex items-center justify-center">
+        <div
+          className="absolute inset-5 rounded-full shadow-inner"
+          style={{
+            background: `conic-gradient(#22c55e 0deg, #06b6d4 ${
+              dashboardStats.promedioScore * 3.6
+            }deg, #e2e8f0 0deg)`,
+          }}
+        />
+
+        <div className="relative w-24 h-24 rounded-full bg-white shadow-[0_14px_35px_rgba(15,23,42,0.16)] flex flex-col items-center justify-center">
+          <div className="text-3xl font-black text-slate-900 leading-none">
+            {dashboardStats.promedioScore}%
+          </div>
+          <div
+            className={`text-sm font-black mt-2 ${
+              dashboardStats.promedioScore >= 90
+                ? 'text-green-600'
+                : dashboardStats.promedioScore >= 70
+                ? 'text-amber-600'
+                : 'text-red-500'
+            }`}
+          >
+            {dashboardStats.promedioScore >= 90
+              ? 'Excelente'
+              : dashboardStats.promedioScore >= 70
+              ? 'Aceptable'
+              : 'Atención'}
+          </div>
+        </div>
+
+        <div className="absolute bottom-4 left-8 text-xs font-black text-slate-400">
+          0%
+        </div>
+        <div className="absolute bottom-4 right-7 text-xs font-black text-slate-400">
+          100%
+        </div>
+      </div>
+    </div>
+  </DashboardPanel>
+
+  <DashboardPanel
+    title="Participación por departamento"
+    subtitle="Checklists realizados por área"
+  >
+    <div className="h-[200px] mt-2">
+      {dashboardStats.departmentData.length === 0 ? (
+        <div className="h-full flex items-center justify-center text-slate-400 font-bold">
+          Sin datos disponibles
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={dashboardStats.departmentData}
+            layout="vertical"
+            margin={{ top: 5, right: 20, left: 5, bottom: 5 }}
+          >
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={95}
+              tick={{
+                fontSize: 11,
+                fill: '#475569',
+                fontWeight: 800,
+              }}
+            />
+            <Tooltip
+              cursor={{ fill: '#f1f5f9' }}
+              contentStyle={{
+                borderRadius: '14px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
+                fontWeight: 700,
+              }}
+            />
+            <Bar
+              dataKey="auditorias"
+              fill="#06b6d4"
+              radius={[0, 10, 10, 0]}
+              barSize={18}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  </DashboardPanel>
+
+  <DashboardPanel
+    title="Distribución por género"
+    subtitle="Participación registrada"
+  >
+    <div className="h-[200px] mt-2 relative">
+      {dashboardStats.totalParticipantes === 0 ? (
+        <div className="h-full flex items-center justify-center text-slate-400 font-bold">
+          Sin participantes registrados
+        </div>
+      ) : (
+        <>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={dashboardStats.genderData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={62}
+                outerRadius={94}
+                paddingAngle={5}
+              >
+                <Cell fill="#2563eb" />
+                <Cell fill="#ec4899" />
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  borderRadius: '14px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
+                  fontWeight: 700,
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="text-center">
+              <div className="text-3xl font-black text-slate-900">
+                {dashboardStats.totalParticipantes}
+              </div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-400 font-black">
+                Total
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-4 text-xs font-black">
+            <div className="flex items-center gap-2 text-blue-600">
+              <span className="w-3 h-3 rounded-full bg-blue-600" />
+              Hombres
+            </div>
+            <div className="flex items-center gap-2 text-pink-500">
+              <span className="w-3 h-3 rounded-full bg-pink-500" />
+              Mujeres
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  </DashboardPanel>
+
+  <DashboardPanel
+    title="Evolución del cumplimiento"
+    subtitle="Últimos registros guardados"
+  >
+    <div className="h-[220px] mt-2">
+      {dashboardStats.scoreTrend.length === 0 ? (
+        <div className="h-full flex items-center justify-center text-slate-400 font-bold">
+          Sin datos disponibles
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={dashboardStats.scoreTrend}
+            margin={{ top: 10, right: 15, left: -20, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }}
+            />
+            <YAxis
+              domain={[0, 100]}
+              tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }}
+            />
+            <Tooltip
+              contentStyle={{
+                borderRadius: '14px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
+                fontWeight: 700,
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="score"
+              stroke="#06b6d4"
+              strokeWidth={4}
+              dot={{
+                r: 5,
+                fill: '#ffffff',
+                stroke: '#06b6d4',
+                strokeWidth: 3,
+              }}
+              activeDot={{
+                r: 7,
+                fill: '#06b6d4',
+              }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  </DashboardPanel>
+</div>
+
+{/* KPIS OPERATIVOS */}
+<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-5">
+  <DashboardSmallKpi
+    title="Piezas revisadas"
+    value={dashboardStats.totalPiezas}
+    subtitle="Total de piezas"
+    color="cyan"
+    icon={<ClipboardCheck className="w-8 h-8" />}
+  />
+
+  <DashboardSmallKpi
+    title="Piezas encontradas"
+    value={dashboardStats.piezasEncontradas}
+    subtitle="Correctas y disponibles"
+    color="green"
+    icon={<PackageCheck className="w-8 h-8" />}
+  />
+
+  <DashboardSmallKpi
+    title="Piezas faltantes"
+    value={dashboardStats.piezasFaltantes}
+    subtitle="No encontradas"
+    color="amber"
+    icon={<AlertTriangle className="w-8 h-8" />}
+  />
+
+  <DashboardSmallKpi
+    title="Cumplimiento piezas"
+    value={`${dashboardStats.cumplimientoPiezas}%`}
+    subtitle="Porcentaje general"
+    color="purple"
+    icon={<Gauge className="w-8 h-8" />}
+  />
+
+  <DashboardSmallKpi
+    title="Pieza crítica"
+    value={dashboardStats.piezaMasFaltante.veces}
+    subtitle={dashboardStats.piezaMasFaltante.nombre}
+    color="red"
+    icon={<PackageX className="w-8 h-8" />}
+  />
+</div>
+
+        {/* TABLAS */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <DashboardTableCard
+            title="Top 5 Equipos"
+            subtitle="Mejores resultados por score y menor tiempo"
+          >
+            <div className="grid gap-3">
+              {dashboardStats.top5.length === 0 ? (
+                <div className="bg-slate-50 rounded-3xl p-6 text-center text-slate-400 font-bold shadow-inner">
+                  Sin equipos registrados
+                </div>
+              ) : (
+                dashboardStats.top5.map((item, index) => (
+                  <div
+                    key={item.id || index}
+                    className={`rounded-3xl p-4 border grid grid-cols-1 md:grid-cols-[70px_1fr_110px_110px] gap-4 items-center ${
+                      index === 0
+                        ? 'bg-gradient-to-r from-amber-100 to-yellow-50 border-amber-200'
+                        : 'bg-slate-50 border-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center">
+                      <div
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shadow-inner ${
+                          index === 0
+                            ? 'bg-amber-200 text-amber-800'
+                            : index === 1
+                            ? 'bg-slate-200 text-slate-700'
+                            : index === 2
+                            ? 'bg-orange-200 text-orange-700'
+                            : 'bg-white text-slate-700'
+                        }`}
+                      >
+                        {getRankingBadge(index)}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                        Equipo / Departamento
+                      </div>
+                      <div className="text-xl font-black text-slate-900 truncate">
+                        {item.area || 'Sin equipo'}
+                      </div>
+                      <div className="text-sm text-slate-500 font-semibold truncate">
+                        {item.departamento || 'N/A'}
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
+                      <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                        Score
+                      </div>
+                      <div className="text-3xl font-black text-emerald-600">
+                        {item.score || 0}%
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
+                      <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                        Tiempo
+                      </div>
+                      <div className="text-3xl font-black text-amber-600">
+                        {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+             )}
+           </div>
+         </DashboardTableCard>
+
+         <DashboardTableCard
+           title="Auditorías recientes"
+           subtitle="Últimos registros guardados en Supabase"
+         >
+           <div className="grid gap-3">
+             {dashboardStats.auditoriasRecientes.length === 0 ? (
+               <div className="bg-slate-50 rounded-3xl p-6 text-center text-slate-400 font-bold shadow-inner">
+                 Sin auditorías recientes
+               </div>
+             ) : (
+               dashboardStats.auditoriasRecientes.map((item, index) => (
+                 <div
+                   key={item.id || index}
+                   className="bg-slate-50 rounded-3xl p-4 border border-slate-100 grid grid-cols-1 md:grid-cols-[1fr_90px_100px_90px] gap-4 items-center"
+                 >
+                   <div className="min-w-0">
+                     <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                       Equipo
+                     </div>
+                     <div className="text-lg font-black text-slate-900 truncate">
+                      {item.area || 'N/A'}
+                     </div>
+                     <div className="text-sm text-slate-500 font-semibold truncate">
+                      {item.departamento || 'N/A'}
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                      Score
+                    </div>
+                    <div className="text-2xl font-black text-emerald-600">
+                      {item.score || 0}%
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="text-xs uppercase tracking-widest text-slate-400 font-black">
+                      Tiempo
+                    </div>
+                   <div className="text-2xl font-black text-amber-600">
+                     {item.tiempo_formateado || formatDuration(item.tiempo_segundos || 0)}
+                   </div>
+                 </div>
+
+                 <button
+                   onClick={() => exportAuditPDF(item)}
+                   className="bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl px-4 py-3 font-black shadow-sm transition-all"
+                 >
+                   PDF
+                 </button>
+               </div>
+             ))
+           )}
+         </div>
+       </DashboardTableCard>
+     </div>
+                        <div className="mt-6 text-center text-slate-500 font-semibold">
+                          “Las 5S no son solo un método, es nuestra forma de trabajar y mejorar cada día.”
+                        </div>
+                      </section>
+                    </div>
+                  </>
+                )}
+                      </div>
+                    </div>
+                   );
+                }
+
+if (isRankingOnlyMode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-4 md:p-8 text-white font-sans">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 p-3 md:p-5 xl:p-6 text-white font-sans overflow-x-hidden">
+        <div className="w-full max-w-none mx-0">
+          <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
             <div>
               <div className="flex items-center gap-4 mb-3">
                 <div className="bg-white/10 border border-white/20 rounded-3xl p-3 md:p-4 flex items-center justify-center">
                   <img
                     src={logoBlanco}
                     alt="Logo PI"
-                    className="w-16 h-16 md:w-24 md:h-24 object-contain"
+                    className="w-20 h-20 md:w-28 md:h-28 xl:w-32 xl:h-32 object-contain"
                   />
                 </div>
                 <div>
-                  <h1 className="text-4xl md:text-6xl font-black tracking-tight">Ranking 5S en Vivo</h1>
-                  <p className="text-cyan-100 text-lg md:text-2xl font-medium">
+                  <h1 className="text-5xl md:text-6xl xl:text-7xl 2xl:text-8xl font-black tracking-tight leading-[0.95]">
+                    Ranking 5S en Vivo
+                  </h1>
+                  <p className="text-cyan-100 text-lg md:text-2xl xl:text-3xl font-bold mt-3">
                     Dinámica 5S · Sistema de Gestión Integral
                   </p>
                 </div>
@@ -1180,13 +2386,13 @@ if (isAdminMode) {
               <p className="text-cyan-100 text-lg">Cuando los equipos guarden sus evaluaciones aparecerán aquí en tiempo real.</p>
             </div>
           ) : (
-            <div className="grid gap-5">
+            <div className="grid gap-4">
               {ranking.slice(0, 12).map((item, index) => (
                 <motion.div
                   key={item.id || index}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`min-h-[136px] rounded-[30px] border p-4 md:p-6 shadow-2xl grid grid-cols-1 xl:grid-cols-[72px_minmax(170px,1.1fr)_minmax(230px,1.45fr)_minmax(380px,2.2fr)_140px_140px] 2xl:grid-cols-[80px_minmax(210px,1.2fr)_minmax(280px,1.6fr)_minmax(460px,2.4fr)_150px_150px] gap-4 xl:gap-5 items-center ${
+                  className={`w-full min-h-[190px] rounded-[36px] border p-5 md:p-7 xl:p-8 shadow-2xl grid grid-cols-1 xl:grid-cols-[110px_minmax(280px,1.3fr)_minmax(320px,1.4fr)_minmax(620px,2.5fr)_190px_190px] gap-5 xl:gap-8 items-center ${
                     index === 0
                       ? 'bg-gradient-to-r from-yellow-300 to-amber-500 text-slate-950 border-yellow-200'
                       : index === 1
@@ -1196,20 +2402,20 @@ if (isAdminMode) {
                       : 'bg-white/10 border-white/15 text-white'
                   }`}
                 >
-                  <div className="text-4xl md:text-5xl font-black text-center xl:text-left shrink-0">
+                  <div className="text-5xl md:text-6xl xl:text-7xl font-black text-center xl:text-left shrink-0">
                     {getRankingBadge(index)}
                   </div>
 
                   <div className="min-w-0">
                     <div
-                      className={`text-[10px] uppercase tracking-widest font-black ${
+                      className={`text-xs xl:text-sm uppercase tracking-widest font-black ${
                         index <= 2 ? 'text-slate-600' : 'text-cyan-100'
                       }`}
                     >
                       Equipo
                     </div>
                     <div
-                      className="text-xl md:text-2xl 2xl:text-3xl font-black leading-tight whitespace-normal break-words max-h-[64px] overflow-hidden"
+                      className="text-2xl md:text-3xl xl:text-4xl font-black leading-tight whitespace-normal break-words max-h-[96px] overflow-hidden"
                       title={item.area || 'Sin equipo'}
                     >
                       {item.area || 'Sin equipo'}
@@ -1226,7 +2432,7 @@ if (isAdminMode) {
                       Departamento
                     </div>
                     <div
-                      className="text-base md:text-lg 2xl:text-xl font-black leading-tight whitespace-normal break-words max-h-[48px] overflow-hidden"
+                      className="text-xl md:text-2xl xl:text-3xl font-black leading-tight whitespace-normal break-words max-h-[86px] overflow-hidden"
                       title={item.departamento || 'N/A'}
                     >
                       {item.departamento || 'N/A'}
@@ -1254,7 +2460,7 @@ if (isAdminMode) {
                       Score
                     </div>
                     <div
-                      className={`text-4xl md:text-5xl font-black ${
+                      className={`text-5xl md:text-6xl xl:text-7xl font-black leading-none ${
                         index <= 2 ? 'text-slate-950' : 'text-cyan-200'
                       }`}
                     >
@@ -1271,7 +2477,7 @@ if (isAdminMode) {
                       Tiempo
                     </div>
                     <div
-                      className={`text-4xl md:text-5xl font-black ${
+                       className={`text-5xl md:text-6xl xl:text-7xl font-black leading-none ${
                         index <= 2 ? 'text-slate-950' : 'text-yellow-200'
                       }`}
                     >
@@ -1283,7 +2489,7 @@ if (isAdminMode) {
             </div>
           )}
 
-          <div className="mt-8 bg-white/10 border border-white/15 rounded-3xl p-5 text-center font-black text-2xl md:text-3xl text-white tracking-wide">
+          <div className="mt-6 w-full bg-white/10 border border-white/15 rounded-3xl p-5 text-center font-black text-2xl md:text-3xl text-white tracking-wide">
             5S · Cultura de Excelencia
           </div>
         </div>
@@ -1352,6 +2558,42 @@ if (isAdminMode) {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-black text-slate-700 mb-2">
+                  Hombres
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  placeholder="Ej. 4"
+                  value={loginData.hombres}
+                  onChange={(e) => setLoginData({ ...loginData, hombres: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+               />
+             </div>
+
+             <div>
+               <label className="block text-sm font-black text-slate-700 mb-2">
+                 Mujeres
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                placeholder="Ej. 3"
+                value={loginData.mujeres}
+                onChange={(e) => setLoginData({ ...loginData, mujeres: e.target.value })}
+                className="w-full rounded-2xl border border-slate-300 px-5 py-4 text-base bg-white focus:outline-none focus:ring-4 focus:ring-cyan-300"
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-400 -mt-2">
+            Máximo 10 participantes por equipo entre hombres y mujeres.
+          </p>
+
             <div>
               <label className="block text-sm font-black text-slate-700 mb-2">
                Integrantes del equipo
@@ -1403,7 +2645,7 @@ if (isAdminMode) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-blue-100 p-3 md:p-6 lg:p-10 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-cyan-50 to-blue-100 p-3 md:p-5 xl:p-6 font-sans">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1517,6 +2759,18 @@ if (isAdminMode) {
               className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">
+              Participantes
+            </label>
+            <input
+              type="text"
+              value={`${formData.participantesTotal || 0} total · H: ${formData.hombres || 0} / M: ${formData.mujeres || 0}`}
+              disabled
+              className="w-full rounded-xl border border-slate-300 px-4 py-3 bg-slate-100 text-slate-700 font-semibold"
+            />
+           </div>
 
           <div>
            <label className="block text-sm font-bold text-slate-700 mb-2">Integrantes</label>
